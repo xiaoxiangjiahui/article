@@ -1,0 +1,28 @@
+package com.csu.entity;
+
+public class ArticleUserGroup {
+	private int articleId;
+	private int groupId;
+	private String userId;
+	
+	public int getArticleId(){
+		return articleId;
+	}
+	public int getGroupId(){
+		return groupId;
+	}
+	public String getUserId(){
+		return userId;
+	}
+	
+	public void setArticleId(int articleId){
+		this.articleId=articleId;
+	}
+	public void setUserId(String userId){
+		this.userId=userId;
+	}
+	public void setGroupId(int groupId){
+		this.groupId=groupId;
+	}
+
+}

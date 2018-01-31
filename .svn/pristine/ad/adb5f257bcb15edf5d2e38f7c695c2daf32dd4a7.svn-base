@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.csu.mapper.GroupAdminMapper">
+    <insert id="add" parameterType="GroupAdmin">
+        insert into t_group_admin (groupId,userId,adminFlag) values (#{groupId},#{userId},#{adminFlag})
+    </insert>
+    
+    <delete id="delete" parameterType="GroupAdmin">
+        delete from t_group_admin where groupId=#{groupId} and userId=#{userId}
+    </delete>
+    
+    <select id="listAdmin" parameterType="int" resultType="GroupAdmin">
+        select * from t_group_admin where groupId=#{groupId}
+    </select>
+    
+    <select id="listSuperAdmin" parameterType="GroupAdmin" resultType="GroupAdmin">
+    	select * from t_group_admin where groupId = #{groupId} and adminFlag = #{adminFlag}
+    </select>
+    
+    <select id="count" parameterType="int" resultType="java.lang.Integer">
+    	select count(*) from t_group_admin where groupId=#{groupId}
+    </select>
+    
+    <select id="listGroup" parameterType="GroupAdmin" resultType="GroupAdmin">
+    	select * from t_group_admin where userId=#{userId} and adminFlag=#{adminFlag}
+    </select>
+</mapper>

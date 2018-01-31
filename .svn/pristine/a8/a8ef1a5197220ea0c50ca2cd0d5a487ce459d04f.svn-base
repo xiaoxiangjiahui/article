@@ -1,0 +1,382 @@
+package com.csu.controller;
+
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.commons.lang.RandomStringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.csu.entity.Article;
+import com.csu.entity.Author;
+import com.csu.entity.HeaderInfo;
+import com.csu.entity.User;
+import com.csu.service.ArticleService;
+import com.csu.service.CommentService;
+import com.csu.service.ElasticsearchService;
+import com.csu.service.GrobidService;
+import com.csu.service.GroupUserService;
+import com.csu.service.MailSenderService;
+import com.csu.service.UserService;
+import com.csu.service.XmlProcessService;
+import com.csu.service.impl.GrobidServiceImpl;
+import com.csu.service.impl.XmlProcessServiceImpl;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
+
+@Controller
+public class UnitTestController {
+	@Autowired
+	private UserService userService;
+	@Autowired
+	ArticleService articleService;
+	@Autowired
+	GrobidService grobidService;
+	@Autowired
+	ElasticsearchService elasticsearchService;
+	@Autowired
+	CommentService commentService;
+	@Autowired
+	GroupUserService groupUserService;
+	@Autowired
+	MailSenderService mailSenderService;
+	
+	@RequestMapping("testuploadSubmit")
+    public ModelAndView upload(HttpServletRequest request, MultipartFile pdfFile)
+            throws Exception {
+        String name = RandomStringUtils.randomAlphanumeric(10);
+        String newFileName = name + ".pdf";
+        File newFile = new File(request.getServletContext().getRealPath("/pdf"), newFileName);
+        newFile.getParentFile().mkdirs();
+        pdfFile.transferTo(newFile);
+        System.out.print(newFile.getAbsoluteFile().toString());
+        String filePath = newFile.getAbsoluteFile().toString();
+		String xmlString = grobidService.grobidProcess(filePath);
+		XmlProcessServiceImpl xmlProcessServiceImpl = new XmlProcessServiceImpl();
+        xmlProcessServiceImpl.process(xmlString);
+        System.out.println("the xml is end");
+        HeaderInfo headerInfo = xmlProcessServiceImpl.getHeaderInfo();
+        System.out.println("1");
+        String title = headerInfo.getTitle();
+        System.out.println(title);
+        String abstracts = headerInfo.getAbstracts();
+        List<Author> authors = new ArrayList<>();
+        authors = xmlProcessServiceImpl.getAuthors();
+
+        String authorName = "";
+        String authorInstitude = "";
+        System.out.println("2");
+        for(Author author : authors) {
+        	authorName = author.getName()+","+authorName;
+        	authorInstitude = author.getInstitution()+","+authorInstitude;
+        }
+        System.out.println("3");
+        
+        
+        //store to mysql
+        //t_article
+        System.out.println("start insert to mysql");
+        Article article = new Article();
+        article.setAddress("unkown");
+        article.setAuthor("unkown");
+        article.setTitle("unknow");
+        article.setAbstracts("unknow");
+        System.out.println("5");
+        if(!(authorInstitude==null))
+        	article.setAddress(authorInstitude);      	
+        if(!(authorName==null))
+        	article.setAuthor(authorName);
+        if(!(title==null))
+        	article.setTitle(title);
+        if(!(title==null))
+        	article.setAbstracts(abstracts);
+        System.out.println("6");
+        article.setElasticsearchId("0");
+        System.out.println("7");
+        SimpleDateFormat sdFormat = new SimpleDateFormat("yyyy-MM-dd");
+        String articleDate = sdFormat.format(new Date());
+        articleDate = articleDate.replaceAll("-", "");
+        article.setArticleDate(articleDate);
+        System.out.println("date:"+article.getArticleDate().toString());
+        System.out.println("address:"+article.getAddress());
+        System.out.println("author:"+article.getAuthor());
+        System.out.println("ESId:"+article.getElasticsearchId());
+        System.out.println("title:"+article.getTitle());
+        System.out.println("abstracts:"+article.getAbstracts());
+        articleService.addArticle(article);
+        System.out.println("mysql is end");
+        int mysqlId = article.getArticleId();
+        
+        //store to es
+        System.out.println("start insert to es and tika");
+        elasticsearchService.addArticleToES(filePath, mysqlId);
+        System.out.println("tika and es is end");
+        ModelAndView mav = new ModelAndView("thankyou");
+        mav.addObject("fileName", newFileName);
+        return mav;
+    }
+	
+	@RequestMapping("uploadForm")
+	public ModelAndView uploadshow(){
+		return new ModelAndView("uploadform");
+	}
+	
+	@RequestMapping("thankyou")
+	public String thankyou() {
+		return "thankyou";
+	}
+	
+	@RequestMapping("testMysql")
+	public String testMysql() {
+		Article article = new Article();
+		article.setTitle("title");
+		article.setAuthor("authors");
+		article.setAddress("address");
+		article.setElasticsearchId("0");
+        SimpleDateFormat sdFormat = new SimpleDateFormat("yyyy-MM-dd");
+        String articleDate = sdFormat.format(new Date());
+        articleDate.replaceAll("-", "");
+        articleDate = "20170925";
+		article.setArticleDate(articleDate);
+		//article.setAbstracts("Distributed Perception Networks (DPN) are a MAS approach to large scale fusion of heterogeneous and noisy information. DPN agents can establish meaningful information filtering channels between the relevant information sources and the decision makers. Through specification of high level concepts, DPN agent organizations generate distributed Bayesian Networks, which provide mappings between the observed symptoms and the hypotheses relevant to the decision making. In addition, DPNs support robust distributed inference as well as decentralized probabilistic");
+		article.setAbstracts("00000");
+		articleService.addArticle(article);
+		return "thankyou";
+	}
+	
+	@RequestMapping("testEs")
+	public String TestedOnSupplier() throws Exception {
+		int mysqlId = 1111;
+		String filePath = "/home/amnesia/paper1.pdf";
+		elasticsearchService.addArticleToES(filePath, mysqlId);
+		return "thankyou";
+	}
+	
+	@RequestMapping("testcomment")
+	public String testComment() {
+		commentService.listComments(2);
+		return "thankyou";
+	}
+	
+	@RequestMapping("testdownload")
+	public ResponseEntity<byte[]> downloadFile(String fileName) throws IOException{
+		//下载
+		fileName = "baUqSDBTWQ.pdf";
+		if (fileName != null) {
+			String downloadPath = "/home/amnesia/workspaces/.metadata/.plugins/org.eclipse.wst.server.core/tmp0/wtpwebapps/article/pdf";
+			File file = new File(downloadPath,fileName);
+			if (file.exists()) {
+				ResponseEntity<byte[]> fileEntity = articleService.download(fileName, file);
+				return fileEntity;
+			}
+			System.out.print("error in file is not exist");
+		}
+		return null;
+	}
+	@RequestMapping("listUser")
+	public String listUser(Model model) {
+		PageHelper.offsetPage(0, 5);
+		List<User> users = userService.listAllUsers();
+		model.addAttribute("users", users);
+		return "listUser";
+	}
+	
+	@RequestMapping("testGroupId")
+	public String testGroupId() {
+		int groupId = groupUserService.getPersonalGroupId("1234@qq.com");
+		System.out.println(""+groupId);
+		return "thankyou";
+	}
+	
+	@RequestMapping("testEmail")
+	public String testEmail() {
+		mailSenderService.sendEmail("876028070@qq.com", "thankyou!");
+		return "thankyou";
+	}
+	
+	@RequestMapping("testShowArticle")
+	public String testShowArticle(Model model) {
+		String userId = "1234@qq.com";
+		int groupId = groupUserService.getPersonalGroupId(userId);
+		System.out.println(""+groupId);
+		List<Article> articles = articleService.listArticle(groupId);
+		System.out.println(""+articles.get(0).getTitle());
+		model.addAttribute("articles", articles);
+		return "showArticle";
+	}
+	
+	//批量下载文献
+	@RequestMapping("testDownloadArticles")
+    public String testDownloadArticles()throws ServletException, IOException {
+		List<Integer> articleIds = new ArrayList<>();
+		articleIds.add(4);
+		String articlePath = null;
+		List<File> files = new ArrayList<>();
+		for(int articleId : articleIds) {
+			articlePath = articleService.getArticlePath(articleId).getArticlePath();
+			files.add(new File(articlePath));
+		}
+		System.out.print(articlePath);//*******
+    	String fileName = UUID.randomUUID().toString() + ".zip";  
+	    // 在服务器端创建打包下载的临时文件  
+	    String outFilePath = "/home/amnesia/Documents";  	  
+	    File zip = new File(outFilePath + fileName);  
+	    // 文件输出流
+	    System.out.println("1");//******
+	    FileOutputStream outStream = new FileOutputStream(zip);  
+	    // 压缩流  
+	    ZipOutputStream zipOutStream = new ZipOutputStream(outStream);  
+	    System.out.println("2");//******
+	    zipFiles(files, zipOutStream); 
+	    zipOutStream.close();  
+	    outStream.close();
+	    System.out.println("3");//******
+	    downloadZip(zip);
+	    return "thankyou";
+    }
+	
+	public void downloadZip(File zipFile) throws IOException {
+		BufferedInputStream fInputStream = new BufferedInputStream(new FileInputStream(zipFile));
+		byte[] buffer = new byte[fInputStream.available()];
+		fInputStream.read(buffer);
+		fInputStream.close();
+	}
+	
+	//循环压缩多个文件  
+	public void zipFiles(List<File> files, ZipOutputStream outputStream) throws IOException, ServletException {  
+	    try {  
+	        int size = files.size();  
+	        // 压缩列表中的文件  
+	        for (int i = 0; i < size; i++) {  
+	            File file = (File) files.get(i);  
+	            zipFile(file, outputStream);  
+	        }  
+	    } catch (IOException e) {  
+	        throw e;  
+	    }  
+	} 
+	
+	public void zipFile(File inputFile, ZipOutputStream outputstream) throws IOException, ServletException {  
+	      try {  
+	          if (inputFile.exists()) {  
+	              if (inputFile.isFile()) {  
+	                  FileInputStream inStream = new FileInputStream(inputFile);  
+	                  BufferedInputStream bInStream = new BufferedInputStream(inStream);  
+	                  ZipEntry entry = new ZipEntry(inputFile.getName());  
+	                  outputstream.putNextEntry(entry);  
+	                  final int MAX_BYTE = 10 * 1024 * 1024; // 最大的流为10M  
+	                  long streamTotal = 0; // 接受流的容量  
+	                  int streamNum = 0; // 流需要分开的数量  
+	                  int leaveByte = 0; // 文件剩下的字符数  
+	                  byte[] inOutbyte; // byte数组接受文件的数据  
+	    
+	                  streamTotal = bInStream.available(); // 通过available方法取得流的最大字符数  
+	                  streamNum = (int) Math.floor(streamTotal / MAX_BYTE); // 取得流文件需要分开的数量  
+	                  leaveByte = (int) streamTotal % MAX_BYTE; // 分开文件之后,剩余的数量  
+	    
+	                  if (streamNum > 0) {  
+	                      for (int j = 0; j < streamNum; ++j) {  
+	                          inOutbyte = new byte[MAX_BYTE];  
+	                          // 读入流,保存在byte数组  
+	                          bInStream.read(inOutbyte, 0, MAX_BYTE);  
+	                          outputstream.write(inOutbyte, 0, MAX_BYTE); // 写出流  
+	                      }  
+	                  }  
+	                  // 写出剩下的流数据  
+	                  inOutbyte = new byte[leaveByte];  
+	                  bInStream.read(inOutbyte, 0, leaveByte);  
+	                  outputstream.write(inOutbyte);  
+	                  outputstream.closeEntry(); // Closes the current ZIP entry  
+	  
+	                  bInStream.close(); // 关闭  
+	                  inStream.close();  
+	              }  
+	          } else {  
+	              throw new ServletException("文件不存在！");  
+	          }  
+	      } catch (IOException e) {  
+	          throw e;  
+	      }  
+	  }
+	
+	@RequestMapping("testAjax")
+	public @ResponseBody int testAjax(String userName) {
+		//String userName = request.getParameter("userName");
+		System.out.println("###################");
+		System.out.println(userName);
+		//System.out.println(array[0]+"###################");
+		//System.out.println(array[1]+"###################");
+		return 1;
+	}
+	@RequestMapping("CheckUsername")
+    public @ResponseBody List<User> CheckUsername(User user)
+    {
+       System.out.println(user.getUserName());
+        List<User> userList = new ArrayList<User>();
+       User user0 = new User();
+       user0.setUserName("java");
+        User user1 = new User();
+        user1.setUserName("javase");
+        User user2 = new User();
+        user2.setUserName("javaee");
+        //对象加入集合
+       userList.add(user0);
+        userList.add(user1);
+        userList.add(user2);
+        return userList;
+    }
+	
+	@RequestMapping("testJ")
+	public String testJ() {
+		return "testJ";
+	}
+	
+	@RequestMapping(value="searchSubmit")
+	public String searchArticle(String keywords,Model model){
+		System.out.println(keywords);
+		List<Integer> articleIds = elasticsearchService.searchForArticleId(keywords);
+		PageHelper.startPage(1,10);
+		List<Article> searchArticles = new ArrayList<Article>();
+		while(!articleIds.isEmpty()){
+			int articleId = articleIds.get(0);
+			System.out.println(""+articleId);
+			articleIds.remove(0);
+			searchArticles.add(articleService.getArticle(articleId));
+		}
+		int totalSearchArticles = (int) new PageInfo<>(searchArticles).getTotal();
+		model.addAttribute("totalArticles", totalSearchArticles);
+		model.addAttribute("articles", searchArticles);
+		System.out.println(searchArticles.get(0).getAddress());
+		return "thankyou";
+	}	
+	
+	@RequestMapping("testShowGroupArticle")
+	public String testShowGroupArticle() {
+		//if(articleService.countArticle(5)>0) {
+			List<Article> articles = articleService.listArticle(5);
+		//}		
+		return "thankyou";
+	}
+}

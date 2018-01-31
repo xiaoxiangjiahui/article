@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 对用户的操作 -->
+<mapper namespace="com.csu.mapper.UserMapper">
+    <insert id="add" parameterType="User">
+        insert into t_user (account,username,passwd,email,role,groupid) values (#{account},#{userName},#{userPasswd},#{userEmail},#{role},#{groupId})
+    </insert>
+    
+    <delete id="delete" parameterType="String">
+        delete from t_user where account = #{account}
+    </delete>
+    
+    <select id="get" parameterType="String" resultType="User">
+        select * from t_user where account = #{account}
+    </select>
+    
+    <update id="update" parameterType="User">
+        update t_user set passwd = #{userPasswd},t_user.username = #{userName},t_user.email = #{userEmail},t_user.role = #{role},t_user.groupid = #{groupId} where t_user.account = #{account}
+    </update>
+    
+    <select id="list" resultType="User">
+        select * from t_user
+    </select>
+    
+    <select id="getByName" parameterType="String" resultType="User">
+    	select * from t_user where username = #{userName}
+    </select>
+    
+    <select id="getGroupIds" parameterType="String" resultType="ArrayList">
+    	select groupid from t_user where account = #{account}
+    </select>
+</mapper>

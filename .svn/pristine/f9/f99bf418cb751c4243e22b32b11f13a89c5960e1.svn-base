@@ -1,0 +1,15 @@
+package com.csu.mapper;
+
+import java.util.List;
+
+import com.csu.entity.ArticleUserGroup;
+
+public interface ArticleUserGroupMapper {
+	public void add(ArticleUserGroup articleUserGroup);
+	public void delete(int articleId);
+	public ArticleUserGroup get(int articleId);
+	public List<ArticleUserGroup> listArticle(int groupId);//列出某个组的文献
+	public int count(int groupId);
+	
+	public ArticleUserGroup getArticleGroup(int groupid,int pid);
+}

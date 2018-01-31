@@ -1,0 +1,39 @@
+package com.csu.entity;
+
+import java.sql.Date;
+import java.sql.Timestamp;
+
+public class Group {
+	private int groupId;
+	private String groupName;
+	private String account;
+	private Timestamp createtime;
+	
+	public void setGroupId(int groupId){
+		this.groupId = groupId;
+	}
+	public void setGroupName(String groupName){
+		this.groupName = groupName;
+	}
+
+	public int getGroupId(){
+		return groupId;
+	}
+	public String getGroupName(){
+		return groupName;
+	}
+	public String getAccount() {
+		return account;
+	}
+	public void setAccount(String account) {
+		this.account = account;
+	}
+	public Timestamp getCreatetimr() {
+		return createtime;
+	}
+	public void setCreatetimr(Timestamp createtime) {
+		this.createtime = createtime;
+	}
+	
+
+}

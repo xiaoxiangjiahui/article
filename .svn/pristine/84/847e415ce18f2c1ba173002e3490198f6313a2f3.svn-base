@@ -1,0 +1,49 @@
+package com.csu.controller;
+
+import javax.servlet.http.HttpSession;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.csu.entity.User;
+import com.csu.service.GroupUserService;
+import com.csu.service.UserService;
+@Controller
+public class LoginController {
+	@Autowired
+	UserService userService;
+	@Autowired
+	GroupUserService groupUserService;
+	
+	@RequestMapping("login")
+	public String login(){
+		return "login";
+	}
+	@RequestMapping(value="loginSubmit",method=RequestMethod.POST)
+	public String loginSubmit(@RequestParam("account")String account,@RequestParam("password")String password,
+			HttpSession session,Model model){		
+		if(userService.checkUser(account, password)==false){
+			model.addAttribute("loginInformation", "对不起，密码或用户名有误");
+			return "thankyou";
+		}
+		User user = userService.getUSer(account);
+		session.setAttribute("account", account);
+		session.setAttribute("userName",user.getUsername());
+		session.setAttribute("role", user.getRole());
+		//boolean isSuperAuthority = groupUserService.checkSuperAuthority(account);
+		session.setAttribute("groupid", user.getGroupId());
+		System.out.println(session.getAttribute("userName"));
+		return "redirect:/personal/index";				
+	}
+	
+	@RequestMapping("logout")
+	public String logout(HttpSession session){
+		session.invalidate();
+		return "login";
+	}
+}

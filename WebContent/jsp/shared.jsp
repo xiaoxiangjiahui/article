@@ -1,0 +1,734 @@
+<%@ page language="java" import="java.util.*" pageEncoding="utf-8"%>
+<jsp:include page="/WEB-INF/base/headhtml.jsp" flush="true"/>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+
+<jsp:include page="/WEB-INF/base/header.jsp" flush="true"/>
+<link href="./assets/global/plugins/icheck/skins/all.css" rel="stylesheet" type="text/css" />
+<link href="./assets/global/plugins/select2/css/select2.min.css" rel="stylesheet" type="text/css" />
+<link href="./assets/global/plugins/select2/css/select2-bootstrap.min.css" rel="stylesheet" type="text/css" />
+<link href="./srcss/jquery.raty.css" rel="stylesheet"/>
+<link href="./assets/pages/css/search.min.css" rel="stylesheet" type="text/css" />
+<style>
+    #center {
+        height: 200px;
+        width: 73%;
+        margin: auto;
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+    }
+
+    p {
+        padding: 0px;
+        margin: 0px;
+    }
+
+    .authors {
+        color: #2319DB;
+    }
+
+    hr {
+        margin: 0px;
+    }
+
+    .check {
+        width: 15px;
+        height: 15px;
+    }
+
+    section {
+        padding: 15px;
+    }
+
+    .document-title {
+        font-size: 18px;
+        line-height: 1.33333;
+        font-weight: normal;
+        padding-left: 10px;
+
+        word-wrap: break-word;
+        margin: 0;
+        color: #555;
+    }
+
+    .document-authors {
+        margin-bottom: 2px;
+        padding-left: 10px;
+        font-size: 13px;
+        line-height: 1.23077;
+        margin-top: 16px;
+    }
+
+    .document-source {
+        margin-top: 16px;
+        margin-bottom: 2px;
+        padding-left: 10px;
+        font-size: 13px;
+        line-height: 1.23077;
+        font-weight: bold;
+        color: #555;
+    }
+
+    .document-type {
+        font-size: 11px;
+        padding-left: 10px;
+        line-height: 1.45455;
+        margin-bottom: 8px;
+        color: #7e7e7e;
+    }
+
+    #wrap {
+        position: relative;
+        padding: 10px;
+        overflow: hidden;
+    }
+
+    #gradient {
+        width: 100%;
+        height: 35px;
+        background: url() repeat-x;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+    }
+
+    #read-more {
+        padding: 5px;
+        background: #fff;
+        color: #333;
+    }
+
+    #read-more a {
+        padding-right: 22px;
+        background: url() no-repeat 100% 50%;
+        font-weight: bold;
+        text-decoration: none;
+    }
+
+    #read-more a:hover {
+        color: #000;
+    }
+
+    textarea {
+        border: 0;
+        background-color: transparent;
+        /*scrollbar-arrow-color:yellow;  
+    scrollbar-base-color:lightsalmon;  
+    overflow: hidden;*/
+        color: #666464;
+        height: auto;
+    }
+
+    .document-abstract {
+        font-size: 13px;
+        line-height: 1.47692;
+        padding: 8px 0;
+        word-wrap: break-word;
+    }
+
+    .document-info {
+        padding: 8px 0 16px;
+    }
+
+    #edit {
+        margin-top: 10px;
+        margin-right: 3px;
+    }
+    .table>tbody>tr>td, .table>tbody>tr>th, .table>tfoot>tr>td, .table>tfoot>tr>th, .table>thead>tr>td, .table>thead>tr>th {
+    	border-top: 0 solid #e7ecf1;
+    }
+</style>
+
+<div class="page-wrapper-row full-height">
+    <div class="page-wrapper-middle">
+        <!-- BEGIN CONTAINER -->
+        <div class="page-container">
+            <!-- BEGIN CONTENT -->
+            <div class="page-content-wrapper">
+                <!-- BEGIN PAGE CONTENT BODY -->
+                <div class="page-content">
+                    <div class="container">
+                        <!-- BEGIN PAGE BREADCRUMBS -->
+                        <ul class="page-breadcrumb breadcrumb">
+                            <li>
+                                <a href="index.html">文献库</a>
+                                <i class="fa fa-circle"></i>
+                            </li>
+                            <li>
+                                <span>被推荐的文献</span>
+                            </li>
+                        </ul>
+                        <!-- END PAGE BREADCRUMBS -->
+                        <!-- BEGIN PAGE CONTENT INNER -->
+                            <div class="mt-content-body">
+                                <div class="row">
+                                    <div class="col-md-8 col-sm-8" style="padding-right: 0;">
+                                        <div class="portlet light " style="height: 100%;min-height:750px;">
+                                            <div class="portlet-title" style="margin-bottom:0;">
+                                                <div class="caption caption-md">
+                                                    <div class="btn-group" style="margin-left: 20px;">
+                                                        <input type="checkbox" id="allcheck" style="height:16px;width: 16px;" />
+                                                    </div>
+                                                   <%--  <c:if test="${sessionScope.role!=1}"> --%>
+                                                    <a class="btn btn-noborder btn-sm" id="shareto" style="padding:0;" data-toggle="modal" href="#responsive"><i class="fa fa-share-alt"></i>分享到</a>
+                                                   <%--  </c:if> --%>
+                                                    
+                                                    <label class="btn btn-noborder btn-sm" style="padding:0;" onclick="download()"><i class="fa fa-download" ></i>下载</label>
+                                                    <!-- <label class="btn btn-noborder btn-sm" style="padding:0;" onclick="deleteitem()"><i class="fa fa-trash" ></i>删除</label> -->
+                                                    
+                                                </div>
+                                            </div>
+                                            <div class="portlet-body">
+                                                 <table class="table  table-condensed" id="table_article">
+                                                    <c:forEach items="${articles}" var="result" varStatus="status">
+                                                        <tr id="${result.pid}">
+                                                            <td style="vertical-align: middle;"><input type="hidden" name="titleid" value="${result.pid}"/>
+                                                                <label class="col-sm-1 control-label">
+                                                                <input type="checkbox" class="check" name="check">
+                                                                </label>
+                                                            </td>
+                                                            <td>
+                                                                <div>
+                                                                    <h4 class="title" name="title">${result.ptitle}</h4>
+                                                                    <p class="metadata" name="metadata" style="margin:0;">
+                                                                        <span class="authors" name="authors">${result.authors}</span>
+                                                                        ${result.addr},&nbsp;
+                                                                        in ${result.publish},&nbsp;${result.publishdate}  
+                                                                    </p>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                        	<td></td>
+                                                        	<td>
+                                                        	<span><small>${result.username}于${result.createtime}推荐</small></span>
+                                                        	<div class="pull-right doscore" data-score="${result.stars}"></div>
+                                                        	</td>
+                                                        </tr>
+                                                        
+                                                    </c:forEach>
+                                                </table>
+                                                <jsp:include page="../jspex/shared-pagination.jsp" flush="true"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 col-sm-4">
+                                        <div class="portlet light" style="height:750px;overflow-y:auto;" >
+                                            <div class="portlet-title">
+                                                <div class="caption caption-md">
+                                                    <i class="icon-bar-chart font-dark hide"></i>
+                                                    <label class="btn btn-noborder btn-sm" style="padding:0;">详细信息</label>
+                                                </div>
+		                                        <div class="actions">
+		                                            <div class="btn-group btn-group-devided" data-toggle="buttons">
+		                                                <button class="btn btn-sm" id="editBtn">编辑</button>
+		                                            </div>
+		                                        </div>
+                                            </div>
+                                            <div class="portlet-body" id="components">
+                                            	<div id="stars" style="display:none; text-align:center;">
+                                            		<div v-for="item in stars">
+                                            			<div v-if="item.stars==5" ><span id="fivestars"></span><span>{{item.nums}}人</span></div>
+                                            			<div v-if="item.stars==4" ><span id="fourstars"></span><span>{{item.nums}}人</span></div>
+                                            			<div v-if="item.stars==3" ><span id="threestars"></span><span>{{item.nums}}人</span></div>
+                                            			<div v-if="item.stars==2" ><span id="twostars"></span><span>{{item.nums}}人</span></div>
+                                            			<div v-if="item.stars==1" ><span id="onestar"></span><span>{{item.nums}}人</span></div>
+                                            		</div>
+                                            	</div>
+                                                <div id="document-details-view">
+                                                	<section class="document-info">
+	                                                    <h4 class="document-title">
+	                                                    	{{docObj.ptitle}}
+	                                                    </h4>
+	                                                    <div class="document-authors">
+	                                                        {{docObj.authosr}}
+	                                                    </div>
+	                                                    <div class="document-source"> 
+	                                                    	{{docObj.addr}}
+	                                                    </div>
+	                                                </section>
+	                                                <div class="document-abstract document-abstract-expandable">
+	                                                    <div class="document-abstract-content" id="wrap">
+	                                                        {{docObj.pabstract}}
+	                                                    </div>
+	                                                    <div id="gradient"></div>
+	                                                    <div id="read-more"></div>
+	                                                </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="portlet-body form" id="editDetail" style="display:none;">
+                                                <form role="form" id="editForm">
+		                                            <div class="form-body" style="padding:0;">
+		                                                <div class="form-group">
+		                                                    <label>Title<font style="color:red">*</font></label>
+		                                                    <div class="">
+		                                                        <input type="text" id="title" name="ptitle" class="form-control" placeholder="title"></div>
+		                                                </div>
+		                                                <div class="form-group">
+		                                                    <label>DOI</label>
+		                                                    <div class="">
+		                                                        <input type="text" id="doi" name="doi" class="form-control" placeholder="DOI"></div>
+		                                                </div>
+		                                                <div class="form-group">
+		                                                    <label>Authors<font style="color:red">*</font></label>
+		                                                    <div class="">
+		                                                        <input type="text" id="authors" name="authors" class="form-control" placeholder="authors"> </div>
+		                                                </div>
+		                                                <div class="form-group">
+		                                                    <label>Authors Address</label>
+		                                                    <div class="">
+		                                                        <input type="text" id="addr" name="addr" class="form-control" id="exampleInputPassword1" placeholder="address">
+		                                                    </div>
+		                                                </div>
+		                                                <div class="form-group">
+		                                                    <label>Publish</label>
+		                                                    <div class="">
+		                                                        <input type="text" id="publish" name="publish" class="form-control" placeholder="publish"> </div>
+		                                                </div>
+		                                                <div class="form-group">
+		                                                    <label>Publish Date</label>
+		                                                    <div class="">
+		                                                        <input type="text" id="publishdate" name="publishdate"  class="form-control" placeholder="date"> </div>
+		                                                </div>
+		                                                <div class="form-group">
+		                                                    <label>Abstract<font style="color:red">*</font></label>
+		                                                    <div class="">
+		                                                         <textarea id="abstract" name="pabstract" class="form-control" rows="6"></textarea>
+		                                                	</div>
+		                                            	</div>
+		                                            	<div class="form-group">
+		                                                    <label>Category</label>
+		                                                    <div class="">
+		                                                         <select id="category" class="form-control" name="cid">
+		                                                         	<option value="0">请选择分类</option>
+		                                                         </select>
+		                                                	</div>
+		                                            	</div>
+		                                            </div>
+		                                        </form>
+                                            </div>
+                                        </div>
+                                        
+                                    </div>
+                                </div>
+                             </div>
+                             <div id="responsive" class="modal fade" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
+                                            <h4 class="modal-title">分享到</h4>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="scroller" style="height:300px" data-always-visible="1" data-rail-visible1="1">
+                                                
+                                                   <div class="tabbable-custom nav-justified">
+                                                       <ul class="nav nav-tabs nav-justified">
+                                                           <li class="active">
+                                                               <a href="#group" data-toggle="tab">组</a>
+                                                           </li>
+                                                           <li>
+                                                               <a href="#user" data-toggle="tab"> 用户 </a>
+                                                           </li>
+                                                           
+                                                       </ul>
+                                                       <div class="tab-content" style="height:240px;" id="shareData">
+                                                           <div class="tab-pane active" id="group">
+                                                               <div class="form-group">
+                                                                   <div class="input-group">
+                                                                       <div class="mt-checkbox-list">
+                                                                        <label class="mt-checkbox mt-checkbox-outline" v-for="item in groups">{{item.gname}} 
+                                                                            <input type="checkbox" :value="item.groupid" name="checkgroups" />
+                                                                            <span></span>
+                                                                        </label>
+                                                                    </div>
+                                                                   </div>
+                                                               </div>
+                                                           </div>
+                                                           <div class="tab-pane" id="user">
+                                                                <div class="input-group select2-bootstrap-append">
+                                                                   <select id="multi-users" class="form-control select2" multiple>
+                                                                       <option></option>
+                                                                       <option v-for="item in users" :value="item.account">{{item.username}}</option>                                                                       
+                                                                   </select>
+                                                               </div>
+                                                           </div>
+                                                       </div>
+                                                   </div>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button id="closeModel" data-dismiss="modal" class="btn dark btn-outline">关闭</button>
+                                            <button class="btn green" id="addRecommend">分享</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- END PAGE CONTENT INNER -->
+                        </div>
+                    </div>
+                </div>
+                <!-- END PAGE CONTENT BODY -->
+                <!-- END CONTENT BODY -->
+            </div>
+            <!-- END CONTENT -->
+        </div>
+        <!-- END CONTAINER -->
+    </div>
+</div>
+<jsp:include page="/WEB-INF/base/footer.jsp" flush="true"/>
+<script src="./srjs/category.js" type="text/javascript"></script>
+<script src="./assets/global/plugins/jquery-ui/jquery-ui.min.js" type="text/javascript"></script>
+<script src="./assets/pages/scripts/ui-modals.min.js" type="text/javascript"></script>
+<script src="./assets/global/plugins/icheck/icheck.min.js" type="text/javascript"></script>
+<script src="./assets/pages/scripts/form-icheck.min.js" type="text/javascript"></script>
+<script src="./assets/global/plugins/select2/js/select2.full.min.js" type="text/javascript"></script>
+<script src="./assets/pages/scripts/components-select2.min.js" type="text/javascript"></script>
+<script src="./srjs//jquery.raty.js"></script>
+<script src="./assets/pages/scripts/search.min.js" type="text/javascript"></script>
+<script>
+	$.fn.raty.defaults.path = './srcss/images';
+	$('.doscore').raty({
+		click: function(score, evt) {
+			console.log($(this).parents("tr").prev().attr("id"));
+			var id = $(this).parents("tr").prev().attr("id");
+			$.ajax({
+				url:"personal/createStars",
+				data:{pid:Number(id),score:score},
+				success: function(data){
+					console.log(data);
+					showDetail(selected_id);
+				},
+				error: function(XMLHttpRequest, textStatus, errorThrown){
+					alert("评分失败");
+				}
+			});
+		    //alert("\nscore: " + score + "\nevent: " + evt);
+		}
+	});
+	$('#fivestars').raty({ readOnly: true, score: 5 });
+	$('#fourstars').raty({ readOnly: true, score: 4 });
+	$('#threestars').raty({ readOnly: true, score: 3 });
+	$('#twostars').raty({ readOnly: true, score: 2 });
+	$('#onestar').raty({ readOnly: true, score: 1 });
+	//初始化
+	var selected_id;
+	$(function () {	    
+	    var slideHeight = 144; // px
+	    var defHeight = $('#wrap').height();
+	    if (defHeight >= slideHeight) {
+	        $('#wrap').css('height', slideHeight + 'px');
+	        $('#read-more').append('<a href="#">查看全部</a>');
+	        $('#read-more a').click(function () {
+	            var curHeight = $('#wrap').height() + 20;
+	            console.log(curHeight);
+	            if (curHeight == slideHeight) {
+	                $('#wrap').animate({
+	                    height: defHeight + 20
+	                }, "normal");
+	                $('#read-more a').html('隐藏');
+	                $('#gradient').fadeOut();
+	            } else {
+	                $('#wrap').animate({
+	                    height: slideHeight
+	                }, "normal");
+	                $('#read-more a').html('查看全部');
+	                $('#gradient').fadeIn();
+	            }
+	            return false;
+	        });
+	    }
+	
+	});
+	
+	function init(){
+		   $('input[name="edit_title"]').val("${article.title}");
+		   $('textarea[name="edit_author"]').val("${article.author}");
+		   $('textarea[name="edit_abstract"]').val("${article.abstracts}");
+		   $('input[name="edit_source"]').val("${article.address}");
+	}
+	
+	//全选，反选
+    $("#allcheck").click(function () {
+        if (this.checked) {
+            $("#table_article  :checkbox").prop("checked", this.checked);
+        } else {
+            $("#table_article  :checkbox").removeProp("checked", this.checked);
+        }
+    });
+	
+	//删除操作
+	function deleteitem(id) {
+		var selectedData=[];  
+    	
+        $("input[name='check']:checked").each(function () { // 遍历选中的checkbox
+          
+        	// page delete
+        	n = $(this).parents("tr").index(); // 获取checkbox所在行的顺序
+            $("table#table_article").find("tr:eq(" + n + ")").remove();
+        	
+          	// deal with data
+            var tablerow = $(this).parents("tr");
+            var id = tablerow.find("[name='titleid']").val();
+            selectedData.push(id);
+            
+            //window.self.location = "deleteUser?info=" + selectedData;  
+         });
+        
+	   $.ajax({
+	        url: "personal/personalDeleteSubmit",
+	        type: 'POST',
+	        data:{selectedData:selectedData},
+	        async: false,
+	        dataType:"json",
+	        success: function () {
+	            alert("success delete");
+	        },
+	        error: function(XMLHttpRequest, textStatus, errorThrown){
+	        	
+	        	 //alert(XMLHttpRequest.status);
+	        	 //alert(XMLHttpRequest.readyState);
+	        	 //alert(textStatus);
+	        }
+	    });
+	   // alert(selectedData);
+	   // alert(typeof(selectedData));
+	}
+
+	//下载文章          
+	function download() {
+		 var selectedData=[];  
+     	
+         $("input[name='check']:checked").each(function () { // 遍历选中的checkbox
+           
+         	// page delete
+         	n = $(this).parents("tr").index(); // 获取checkbox所在行的顺序
+             $("table#table_article").find("tr:eq(" + n + ")").remove();
+         	
+           	// deal with data
+             var tablerow = $(this).parents("tr");
+             var id = tablerow.find("[name='titleid']").val();
+             selectedData.push(id);
+             
+             //window.self.location = "deleteUser?info=" + selectedData;  
+          });
+         
+         console.log(selectedData);
+	    $.ajax({
+	        url: "personal/downloadArticles",
+	        type: 'POST',
+	        data: {selectedData:selectedData},
+	        async: false,
+	        success: function (e) {
+	            alert("success download");
+	        },
+	        error: function(XMLHttpRequest, textStatus, errorThrown){                        	
+	       	 	/* alert(XMLHttpRequest.status);
+	       	    alert(XMLHttpRequest.readyState);
+	       	 	alert(textStatus); */
+	       	 	alert(文件下载失败);
+	       }
+	    });
+	}
+	//点击tr获取id
+	var detailVM = new Vue({
+		el:"#components",
+		data: {
+			docObj:{},
+			stars:[]
+		}
+	});
+	$("#table_article tr").click( function () {
+	    var article_id;
+	    article_id = $(this).attr("id");
+	    if(!article_id) return;
+	    selected_id = article_id;
+	    //$("#"+article_id+" :checkbox").prop("checked","checked");
+	    //console.log(article_id);
+	    showDetail(article_id);          
+	})
+	
+	function showDetail(article_id){
+		$.ajax({
+	        url: "personal/showDetails",
+	        type: 'POST',
+	        async: true,
+	        data: {article_id:article_id},
+	        success: function (result) {
+	        	//alert(result.abstracts);
+	     		//alert(result.title);
+	     		//alert(result.address);
+	            if (result == undefined || result.length == 0) {
+	            	$("#components").children().remove();
+	                $("#components").append("文章无返回结果");
+	                
+	            } else {
+	            	//详细信息展示
+	            	console.log(result);
+	            	detailVM.$data.docObj = result.article;
+	            	detailVM.$data.stars = result.stars;
+	            	$("#stars").show();
+	            }
+	        }
+	    });       
+	}
+	
+	function searchArticle(){
+	var queryItem = $('#queryItem').val();
+	//alert(queryItem);
+		$.ajax({
+			url:"searchSubmit",
+			data:{keywords:queryItem},
+			type:"post",
+			success:function(){
+				
+			}
+		});
+	}
+	var shareVm = new Vue({
+		el:"#shareData",
+		data:{
+			groups:[],
+			users:[]
+		}
+	});
+	
+	$("#shareto").on("click",function(){
+		var c = $("#table_article  :checkbox").prop("checked");
+		if(!c){
+			return;
+		}else{
+			$.ajax({
+				url:"personal/getUserAndGroup",
+				success: function(data){
+					console.log(data);
+					shareVm.$data.groups = data.groups;
+					shareVm.$data.users = data.users;
+				},
+				error:function(data){
+					
+				}
+			})
+		}
+	});
+	
+	$("#addRecommend").on("click",function(){
+		var articleIds=[]; 
+	    $("input[name='check']:checked").each(function () { // 遍历选中的checkbox
+	    	
+	    	n = $(this).parents("tr").index(); // 获取checkbox所在行的顺序
+	        $("table#table_article").find("tr:eq(" + n + ")").remove();
+	    	
+	      	// deal with data
+	        var tablerow = $(this).parents("tr");
+	        var id = tablerow.find("[name='titleid']").val();
+	        articleIds.push(Number(id));
+	        
+	        //window.self.location = "deleteUser?info=" + selectedData;  
+	    });
+		console.log(articleIds);
+		var groupids = [];
+		$("input[name='checkgroups']:checked").each(function(){
+			groupids.push(Number($(this).val()));
+		});
+		if(groupids.length==0){
+			groupids=[0];
+		}
+		console.log(groupids);
+		var users = $("#multi-users").val();
+		if(users==null) {
+			users=[0];
+		}
+		console.log(users);
+		if(users[0]==0 && groupids[0]==0) return;
+		$.ajax({
+			url:"personal/recommendArticle",
+			data:{users:users,articleIds:articleIds,groupids:groupids},
+			type:"post",
+			success:function(data){
+				if(data.rel){
+					alert("分享成功!");
+					//$("#closeModel").trigger("click");
+					location.reload();
+				}
+				else
+					alert("分享失败");
+			},
+			error: function(XMLHttpRequest, textStatus, errorThrown){                        	
+		   	 	alert("服务器错误");
+		   }
+		});
+	});
+	
+	
+	
+	$("#editBtn").on("click",function(){
+		console.log($("#editBtn").text())
+		if($("#editBtn").text() =="编辑"){
+			$("#editBtn").html("提交");
+			$("#components").hide();
+			$("#editDetail").show();
+			 $.ajax({
+			        url: "personal/showDetails",
+			        type: 'POST',
+			        async: true,
+			        data: {article_id:selected_id},
+			        success: function (data) {
+		            	//详细信息展示
+		            	console.log(data.article);
+		            	var result=data.article;
+		                //文本框填充
+		                $("#title").val(result.ptitle);
+		                $('#doi').val(result.doi);
+		                $('#authors').val(result.authors);
+		                $('#addr').val(result.addr);
+		                $('#publish').val(result.publish);
+		                $('#publishdate').val(result.publishdate);
+		                $('#abstract').val(result.pabstract);
+		                $('#category').val(result.cid);
+		                //文献推荐
+		                $("#recommendTitle").val(result.title);
+		                $("#recommendId").val(result.articleId);
+			         
+			        }
+			    });               
+		}else{
+			var data = $("#editForm").serializeArray();
+	    	var o={};
+	    	$.each(data,function(){
+	    		o[this.name]=this.value;
+	    		console.log(typeof this.value);
+	    	});
+	    	o.pid=selected_id;
+	    	console.log("form",o);
+	    	if(o.ptitle!=''&&o.authors!=''&&o.pabstract!=''){
+	    		o.pid=parseInt(o.pid);
+	    		o.cid=parseInt(o.cid);
+	    		console.log(typeof o.pid);
+	    		$.ajax({
+	    			url:"personal/editDetails",
+	    			type:"POST",
+	    			data:{article:JSON.stringify(o)},
+	    			success: function(data){
+	    				 alert("编辑成功");
+	    				 $("#editBtn").html("编辑");
+	    				 $("#components").show();
+	    				 $("#editDetail").hide();
+	    				 showDetail(selected_id);
+	    			},
+	    			error: function(XMLHttpRequest, textStatus, errorThrown){     
+		           	 	alert("修改失败");
+		           }
+	    		});
+	    	}else{
+	    		alert("缺少必要参数")
+	    	}
+		}
+	});
+
+</script>
+<jsp:include page="/WEB-INF/base/tailhtml.jsp" flush="true"/>

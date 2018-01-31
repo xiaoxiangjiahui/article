@@ -1,0 +1,54 @@
+package com.csu.entity;
+
+public class User {
+	private int userId;
+	private String account;
+	private String userName;
+	private String userPasswd;
+	private String userEmail;
+	private int role;
+	private int groupId;
+	public int getUserId() {
+		return userId;
+	}
+	public void setUserId(int userId) {
+		this.userId = userId;
+	}
+	public String getAccount() {
+		return account;
+	}
+	public void setAccount(String account) {
+		this.account = account;
+	}
+	public String getUserName() {
+		return userName;
+	}
+	public void setUserName(String userName) {
+		this.userName = userName;
+	}
+	public String getUserPasswd() {
+		return userPasswd;
+	}
+	public void setUserPasswd(String userPasswd) {
+		this.userPasswd = userPasswd;
+	}
+	public String getUserEmail() {
+		return userEmail;
+	}
+	public void setUserEmail(String userEmail) {
+		this.userEmail = userEmail;
+	}
+	public int getRole() {
+		return role;
+	}
+	public void setRole(int role) {
+		this.role = role;
+	}
+	public int getGroupId() {
+		return groupId;
+	}
+	public void setGroupId(int groupId) {
+		this.groupId = groupId;
+	}
+
+}

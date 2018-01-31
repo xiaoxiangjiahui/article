@@ -1,0 +1,61 @@
+package com.csu.service.impl;
+
+import java.io.FileInputStream;
+import java.util.Arrays;
+import java.util.Properties;
+
+import org.grobid.core.data.BiblioItem;
+import org.grobid.core.engines.Engine;
+import org.grobid.core.factory.GrobidFactory;
+import org.grobid.core.main.GrobidHomeFinder;
+import org.grobid.core.utilities.GrobidProperties;
+import org.springframework.stereotype.Service;
+
+import com.csu.service.GrobidService;
+
+@Service
+public class GrobidServiceImpl implements GrobidService{
+
+    static {
+        try{
+           System.out.println("Load Dll...!");
+           System.loadLibrary("libwapiti");
+          // System.load("D://dev/grobid-0.5.0//grobid-home//lib//win-64//libwapiti.dll");
+           System.out.println("Load DOWN!");
+        }catch(Exception e){
+            e.printStackTrace();
+            System.out.println("Load DLL!");
+        }
+    }
+
+    public String grobidProcess(String FilePath) throws Exception {
+        // TODO Auto-generated method stub
+        //Properties prop = new Properties();
+        //prop.load(new FileInputStream("grobid-example.properties"));
+        try {
+
+            String pGrobidHome ="D:/dev/grobid-0.5.0/grobid-home";
+            GrobidHomeFinder grobidHomeFinder = new GrobidHomeFinder(Arrays.asList(pGrobidHome));
+            GrobidProperties.getInstance(grobidHomeFinder);
+
+            System.out.println(">>>>>>>> GROBID_HOME="+GrobidProperties.get_GROBID_HOME_PATH());
+
+            Engine engine = GrobidFactory.getInstance().createEngine();
+
+            // test header extraction from article
+            String pdfPath = FilePath;
+            BiblioItem resHeader = new BiblioItem();
+            String xmlString =engine.processHeader(pdfPath, false, resHeader);
+            System.out.println(xmlString);
+
+            return xmlString;
+        }
+        catch (Exception e) {
+            // If an exception is generated, print a stack trace
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+
+}

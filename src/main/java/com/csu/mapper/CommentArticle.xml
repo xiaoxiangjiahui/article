@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.csu.mapper.CommentArticleMapper">
+    <insert id="add" parameterType="CommentArticle">
+        insert into t_recommand (pid,fromuser,touser,createtime) values (#{pid},#{fromUser},#{toUser},NOW())
+    </insert>
+    
+    <delete id="delete" parameterType="int">
+        delete from t_recommand where pid=#{pid}
+    </delete>
+    
+    <select id="getByFromUser" parameterType="String" resultType="CommentArticle">
+        select * from t_recommand where fromuser=#{fromUser}
+    </select>
+    <select id="getByToUser" parameterType="String" resultType="Article">
+        select a.pid,a.ptitle,a.cid,a.doi,a.unique_title,a.authors,a.addr,a.publish,a.publishdate,a.pabstract,a.path,a.esid,a.account,c.fromuser,u.username,c.createtime from t_article a,t_recommand c,t_user u 
+ 		where touser=#{toUser} and a.pid=c.pid and u.account=c.fromuser order by c.createtime desc
+    </select>
+    <select id="list" parameterType="int" resultType="CommentArticle">
+        select * from t_recommand  
+    </select>
+    
+    <select id="selectByPid" parameterType="int" resultType="CommentArticle">
+        select * from t_recommand where pid=#{pid} 
+    </select>
+</mapper>

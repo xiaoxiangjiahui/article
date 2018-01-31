@@ -1,0 +1,45 @@
+package com.csu.controller;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.csu.service.GroupService;
+import com.csu.service.UserService;
+
+
+@Controller
+public class RegisterController {
+	@Autowired
+	private UserService userService;
+	@Autowired
+	GroupService groupService;
+	
+	@RequestMapping(value="registerSubmit",method=RequestMethod.POST)
+	public ModelAndView registerSubmit(@RequestParam("email")String userId,@RequestParam("username")String userName,
+			@RequestParam("rpassword")String userPassword,HttpSession session){
+		if(userService.newUser(userId, userName, userPassword)==true){
+			groupService.newPersonalGroup(userId);
+			session.setAttribute("userId", userId);
+			session.setAttribute("userName", userName);
+			return new ModelAndView("redirect:/personal/personalLibrary"); //"thank you for your register"
+		}			
+		else {
+			return new ModelAndView("redirect:/login");//"Sorry,the ID is exist"
+		}
+	}
+	
+	@RequestMapping("/register/checkUserId")
+	public String checkUserId(HttpServletRequest request,HttpServletResponse response) {
+		String userId = request.getParameter("email").toString();
+		return "";
+	}
+
+}

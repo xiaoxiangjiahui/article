@@ -1,0 +1,46 @@
+package com.csu.service.impl;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.csu.entity.CommentUserContent;
+import com.csu.entity.CommentArticle;
+import com.csu.mapper.CommentArticleMapper;
+import com.csu.mapper.CommentUserContentMapper;
+import com.csu.service.CommentService;
+@Service
+public class CommentServiceImpl implements CommentService{
+	@Autowired
+	CommentArticleMapper commentArticleMapper;
+	@Autowired
+	CommentUserContentMapper commentUserContentMapper;
+	
+	public List<CommentUserContent> listComments(int articleId){
+		List<CommentArticle> commentArticles = commentArticleMapper.list(articleId);
+		List<Integer> commentIds = new ArrayList<>();
+		/*for(CommentArticle commentArticle : commentArticles)
+			commentIds.add(commentArticle.getCommentId());*/
+		List<CommentUserContent> commentUserContents = commentUserContentMapper.list(commentIds);
+		return commentUserContents;
+	}
+
+	@Override
+	public void saveComment(CommentUserContent commentUserContent, int articleId) {
+		// TODO Auto-generated method stub
+		SimpleDateFormat sdFormat = new SimpleDateFormat("yyyy-MM-dd");
+        String commentDate = sdFormat.format(new Date());
+        commentDate = commentDate.replaceAll("-", "");
+        commentUserContent.setCommentDate(commentDate);
+		commentUserContentMapper.add(commentUserContent);
+		CommentArticle commentArticle = new CommentArticle();
+		/*commentArticle.setArticleId(articleId);
+		commentArticle.setCommentId(commentUserContent.getCommentId());*/
+		commentArticleMapper.add(commentArticle);
+	}
+
+}

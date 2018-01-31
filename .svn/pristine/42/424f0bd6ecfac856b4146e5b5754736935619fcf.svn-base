@@ -1,0 +1,27 @@
+package com.csu.entity;
+
+public class GroupUser {
+	private String userId;
+	private int groupId;
+	private int groupFlag;//0代表私人，1代表公共，2代表正常分组
+	public String getUserId(){
+		return userId;
+	}
+	public int getGroupId(){
+		return groupId;
+	}
+	public int getGroupFlag(){
+		return groupFlag;
+	}
+	
+	public void setUserId(String userId){
+		this.userId=userId;
+	}
+	public void setGroupId(int groupId){
+		this.groupId=groupId;
+	}
+	public void setGroupFlag(int groupFlag){
+		this.groupFlag=groupFlag;
+	}
+
+}

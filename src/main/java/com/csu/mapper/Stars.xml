@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.csu.mapper.StarsMapper">
+	<insert id="add" parameterType="Stars" useGeneratedKeys="true" keyProperty="sid">
+        insert into t_stars (pid,account,stars) values (#{pid},#{account},#{stars})
+    </insert>
+    
+    <delete id="delete" parameterType="int">
+        delete from t_stars where pid=#{pid}
+    </delete>
+    
+    <update id="update" parameterType="Stars">
+    	update t_stars set stars=#{stars} where sid=#{sid};
+    </update>
+    
+    <select id="getStars" parameterType="int" resultType="Stars">
+       select stars,count(*) as nums from t_stars where pid=#{pid} GROUP BY stars ORDER BY stars DESC;
+    </select>
+    
+    <select id="get" parameterType="int" resultType="Stars">
+       select * from t_stars where pid=#{pid};
+    </select>
+    
+    <select id="haveRecord" resultType="Stars">
+       select * from t_stars where pid=#{0} and account=#{1};
+    </select>
+</mapper>

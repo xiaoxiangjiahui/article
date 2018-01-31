@@ -1,0 +1,232 @@
+package com.csu.service.impl;
+
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+import javax.servlet.ServletException;
+
+import org.apache.commons.io.FileUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+
+import com.csu.entity.Article;
+import com.csu.entity.ArticlePath;
+import com.csu.entity.ArticleUserGroup;
+import com.csu.entity.CommentArticle;
+import com.csu.entity.CommentUserContent;
+import com.csu.mapper.ArticleMapper;
+import com.csu.mapper.ArticlePathMapper;
+import com.csu.mapper.ArticleUserGroupMapper;
+import com.csu.mapper.CommentArticleMapper;
+import com.csu.mapper.CommentUserContentMapper;
+import com.csu.service.ArticleService;
+@Service
+public class ArticleServiceImpl implements ArticleService{
+	@Autowired
+	ArticleUserGroupMapper articleUserGroupMapper;
+	@Autowired
+	ArticleMapper articleMapper;
+	@Autowired
+	ArticlePathMapper articlePathMapper;
+	@Autowired
+	CommentArticleMapper commentArticleMapper;
+	@Autowired
+	CommentUserContentMapper commentUserContentMapper;
+	
+	public List<Article> listArticle(int groupId){
+		List<ArticleUserGroup> articleUserGroups = articleUserGroupMapper.listArticle(groupId);
+		List<Article> articles = new ArrayList<Article>();//最终返回
+		List<Integer> lIntegers = new ArrayList<Integer>();//文献的ID
+		while(!articleUserGroups.isEmpty()){
+			lIntegers.add(articleUserGroups.get(0).getArticleId());
+			articleUserGroups.remove(0);
+		}
+		articles = articleMapper.list(lIntegers);
+		return articles;
+	}
+	
+	public Article getArticle(int articleId){
+		return articleMapper.get(articleId);
+	}
+
+
+	public ResponseEntity<byte[]> download(String fileName, File file) throws IOException{
+		// TODO Auto-generated method stub
+		String dfileName = new String(fileName.getBytes("gb2312"),"iso8859-1");
+		HttpHeaders httpHeaders = new HttpHeaders();
+		httpHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+		httpHeaders.setContentDispositionFormData("attachment", dfileName);
+		return new ResponseEntity<byte[]>(FileUtils.readFileToByteArray(file),httpHeaders,HttpStatus.CREATED);
+	}
+	
+	public ResponseEntity<byte[]> downloadBatch(int[] articleIds) throws IOException, ServletException{
+		String articlePath = null;
+		List<File> files = new ArrayList<>();
+		for(int articleId : articleIds) {
+			articlePath = articlePathMapper.get(articleId).getArticlePath();
+			files.add(new File(articlePath));
+		}	
+    	String fileName = UUID.randomUUID().toString() + ".zip";  
+	    // 在服务器端创建打包下载的临时文件  
+	    String outFilePath = "/home/amnesia/Documents";  	  
+	    File zip = new File(outFilePath + fileName);  
+	    // 文件输出流  
+	    FileOutputStream outStream = new FileOutputStream(zip);  
+	    // 压缩流  
+	    ZipOutputStream zipOutStream = new ZipOutputStream(outStream);  	  
+	    zipFiles(files, zipOutStream); 
+	    zipOutStream.close();  
+	    outStream.close();
+	    //开始下载
+		HttpHeaders httpHeaders = new HttpHeaders();
+		httpHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+		httpHeaders.setContentDispositionFormData("attachment", fileName);
+		return new ResponseEntity<byte[]>(FileUtils.readFileToByteArray(zip),httpHeaders,HttpStatus.CREATED);
+	}
+	
+	//循环压缩多个文件  
+	public void zipFiles(List<File> files, ZipOutputStream outputStream) throws IOException, ServletException {  
+		try {  
+			int size = files.size();  
+			// 压缩列表中的文件  
+			for (int i = 0; i < size; i++) {  
+				File file = (File) files.get(i);  
+				zipFile(file, outputStream);  
+			}  
+		} catch (IOException e) {  
+			throw e;  
+		}  
+	} 
+		
+	public void zipFile(File inputFile, ZipOutputStream outputstream) throws IOException, ServletException {  
+		try {  
+			if (inputFile.exists()) {  
+				if (inputFile.isFile()) {  
+					FileInputStream inStream = new FileInputStream(inputFile);  
+					BufferedInputStream bInStream = new BufferedInputStream(inStream);  
+					ZipEntry entry = new ZipEntry(inputFile.getName());  
+					outputstream.putNextEntry(entry);  
+					final int MAX_BYTE = 10 * 1024 * 1024; // 最大的流为10M  
+					long streamTotal = 0; // 接受流的容量  
+					int streamNum = 0; // 流需要分开的数量  
+					int leaveByte = 0; // 文件剩下的字符数  
+					byte[] inOutbyte; // byte数组接受文件的数据  
+		    
+					streamTotal = bInStream.available(); // 通过available方法取得流的最大字符数  
+					streamNum = (int) Math.floor(streamTotal / MAX_BYTE); // 取得流文件需要分开的数量  
+					leaveByte = (int) streamTotal % MAX_BYTE; // 分开文件之后,剩余的数量  
+		    
+					if (streamNum > 0) {  
+						for (int j = 0; j < streamNum; ++j) {  
+							inOutbyte = new byte[MAX_BYTE];  
+							// 读入流,保存在byte数组  
+							bInStream.read(inOutbyte, 0, MAX_BYTE);  
+							outputstream.write(inOutbyte, 0, MAX_BYTE); // 写出流  
+						}  
+					}  
+					// 写出剩下的流数据  
+					inOutbyte = new byte[leaveByte];  
+					bInStream.read(inOutbyte, 0, leaveByte);  
+					outputstream.write(inOutbyte);  
+					outputstream.closeEntry(); // Closes the current ZIP entry  
+		  
+					bInStream.close(); // 关闭  
+					inStream.close();  
+				}  
+			} else {  
+				throw new ServletException("文件不存在！");  
+			}  
+		} catch (IOException e) {  
+			throw e;  
+		}  
+	}  
+	
+	public void downloadZip(File zipFile) throws IOException {
+		BufferedInputStream fInputStream = new BufferedInputStream(new FileInputStream(zipFile));
+		byte[] buffer = new byte[fInputStream.available()];
+		fInputStream.read(buffer);
+		fInputStream.close();
+	}
+	
+	public ArticlePath getArticlePath(int articleId){
+		return articlePathMapper.get(articleId);
+	}
+	
+	public void saveArticlePath(ArticlePath articlePath){
+		articlePathMapper.add(articlePath);
+	}
+	
+	public void deleteBatchArticles(List<Integer> articleIds){
+		while(!articleIds.isEmpty()){
+			articleMapper.delete(articleIds.get(0));
+			articleUserGroupMapper.delete(articleIds.get(0));
+			articlePathMapper.delete(articleIds.get(0));
+			commentArticleMapper.delete(articleIds.get(0));
+			articleIds.remove(0);
+		}
+	}
+	
+	public void deleteArticle(int articleId) {
+		/*articleMapper.delete(articleId);
+		articlePathMapper.delete(articleId);
+		articleUserGroupMapper.delete(articleId);
+		if(!(commentArticleMapper.list(articleId)).isEmpty()) {
+			commentArticleMapper.delete(articleId);
+			List<CommentArticle> commentArticles = commentArticleMapper.list(articleId);
+			for(CommentArticle commentArticle : commentArticles)
+				commentUserContentMapper.delete(commentArticle.getCommentId());
+		}	*/	
+	}
+	
+	public void addArticle(Article article) {
+		articleMapper.add(article);
+	}
+
+	@Override
+	public void addArticleUserGroup(ArticleUserGroup articleUserGroup) {
+		// TODO Auto-generated method stub
+		articleUserGroupMapper.add(articleUserGroup);
+	}
+
+	@Override
+	public void updateArticle(Article article) {
+		// TODO Auto-generated method stub
+		articleMapper.update(article);
+	}
+
+	@Override
+	public int countArticle(int groupId) {
+		// TODO Auto-generated method stub
+		int articleCounts = articleUserGroupMapper.count(groupId);
+		return articleCounts;
+	}
+
+	@Override
+	public void addArticlePath(ArticlePath articlePath) {
+		// TODO Auto-generated method stub
+		articlePathMapper.add(articlePath);
+	}
+
+	@Override
+	public List<Integer> filterArticleFromgroup(List<Integer> articleIds, int groupId) {
+		// TODO Auto-generated method stub		
+		List<ArticleUserGroup> articleUserGroups = articleUserGroupMapper.listArticle(groupId);
+		List<Integer> groupArticles = new ArrayList<>();
+		for(ArticleUserGroup articleUserGroup : articleUserGroups)
+			groupArticles.add(articleUserGroup.getArticleId());
+		articleIds.retainAll(groupArticles);
+		return articleIds;
+	}
+}

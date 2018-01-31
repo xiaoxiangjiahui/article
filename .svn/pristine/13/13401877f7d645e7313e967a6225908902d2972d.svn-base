@@ -1,0 +1,245 @@
+package com.csu.controller;
+
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.commons.lang.RandomStringUtils;
+import org.apache.lucene.analysis.it.ItalianAnalyzer;
+import org.apache.poi.ss.formula.functions.Replace;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpRequest;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
+
+import com.alibaba.fastjson.JSON;
+import com.csu.crawler.BaiduArticleCrawler;
+import com.csu.crawler.CrawlerFactory;
+import com.csu.crawler.DOIArticleCrawler;
+import com.csu.crawler.DoiUtil;
+import com.csu.crawler.TikaUtil;
+import com.csu.entity.Article;
+import com.csu.entity.ArticlePath;
+import com.csu.entity.ArticleUserGroup;
+import com.csu.entity.Author;
+import com.csu.entity.HeaderInfo;
+import com.csu.service.ArticleService;
+import com.csu.service.CommentService;
+import com.csu.service.ElasticsearchService;
+import com.csu.service.GrobidService;
+import com.csu.service.GroupUserService;
+import com.csu.service.MailSenderService;
+import com.csu.service.UserService;
+import com.csu.service.impl.GrobidServiceImpl;
+import com.csu.service.impl.XmlProcessServiceImpl;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
+
+@RequestMapping("personal")
+@Controller
+public class UploadArticleController {
+	@Autowired
+	ArticleService articleService;
+	@Autowired
+	GroupUserService groupUserService;
+	@Autowired
+	CommentService commentService;
+	@Autowired
+	ElasticsearchService elasticsearchService;
+	@Autowired
+	GrobidService grobidService;
+	@Autowired
+	MailSenderService mailSenderService;
+	@Autowired
+	UserService userService;
+
+	@RequestMapping(value = "nav_uploadfile")
+	public String nav_uploadfile(HttpSession httpSession, Model model) {
+		if (httpSession.getAttribute("account") == null)
+			return "redirect:../login";
+		return "nav_uploadfile";
+	}
+
+	// 上传文献到服务器
+	@RequestMapping(value = "uploadSubmit", method = RequestMethod.POST)
+	public @ResponseBody Article uploadSubmit(HttpServletRequest request, HttpSession session) throws Exception {
+		String userId = session.getAttribute("account").toString();
+		int groupId = (int) session.getAttribute("groupid");
+		Article article = new Article();
+
+		/**
+		 * 1 用tika解析pdf，拿到doi 2
+		 * 如果有doi。通过doi和doi官网拿到title，authors，publish，date，用grobid补充摘要和作者单位信息 3
+		 * 如果没有doi，或者联网失败，直接通过grobid拿头信息 4 返回article对象
+		 */
+		if (request instanceof MultipartHttpServletRequest) {
+
+			List<MultipartFile> files = ((MultipartHttpServletRequest) request).getFiles("file_upload");
+			// 只处理一个文件上传
+			if (!files.isEmpty()) {
+				// create random file name
+				String name = RandomStringUtils.randomAlphanumeric(10);
+				String articleName = name + ".pdf";
+				// filePath
+				String filePath = "D:\\uploadfile\\";
+				String fileFullPath = filePath + articleName;
+				// fileFullPath=fileFullPath.replace("\\", "\\\\");
+				System.out.println("fileFullPath:" + fileFullPath);
+				File newFile = new File(fileFullPath);
+				// 将读到的文件流写指定文件
+				files.get(0).transferTo(newFile);
+
+				// tika处理后得到DOI
+				String doi = DoiUtil.getDoiContentByRegex(TikaUtil.getPDFOriginalText(fileFullPath));
+				if (doi != null) {
+					System.out.println(">>>>doi:" + doi);
+					// 创建doi爬虫爬取信息
+					DOIArticleCrawler articleInfoCrawler = CrawlerFactory.createDOiCralwer(doi);
+					articleInfoCrawler.setArticle(article);
+					articleInfoCrawler.start();
+					article.setDoi(doi);
+					System.out.println("1" + JSON.toJSON(article));
+				}
+
+				/**
+				 * grobid处理分三种情况， 第一种是文章有doi，grobid补充摘要和作者单位
+				 * 第二种是没有doi，则grobid提取title，启动爬虫 第三种是通过title爬不到，全靠grobid提供信息
+				 */
+
+				//GrobidService grobidService = new GrobidServiceImpl();
+				String xmlString = grobidService.grobidProcess(fileFullPath);
+				// xml process
+				XmlProcessServiceImpl xmlProcessServiceImpl = new XmlProcessServiceImpl();
+				xmlProcessServiceImpl.process(xmlString);
+				HeaderInfo headerInfo = xmlProcessServiceImpl.getHeaderInfo();
+				String title = headerInfo.getTitle();
+				List<Author> authors = xmlProcessServiceImpl.getAuthors();
+				String abstracts = headerInfo.getAbstracts();
+				String authorsName = "";
+				String authorAdress = "";
+				for (Author author : authors) {
+					authorsName = authorsName + "," + author.getName();
+					authorAdress = author.getAuthorsAdressesString();
+				}
+
+				// 通过标题和百度补充头信息
+				if (doi == null) {
+					if (title != null && !"".equals(title)) {
+						// 创建title爬虫爬取信息
+						BaiduArticleCrawler articleInfoCrawler = CrawlerFactory.createBaiduCrawler(title);
+						articleInfoCrawler.setArticle(article);
+						articleInfoCrawler.start();
+						System.out.println("2" + JSON.toJSON(article));
+					}
+				}
+
+				if (article.getPtitle() == null) {
+					if (title != null) {
+						article.setPtitle(title);
+					}
+				}
+
+				if (article.getAuthors() == null) {
+					if (authors != null) {
+						article.setAuthors(authorsName);
+					}
+				}
+				// 摘要和作者单位要grobid填充
+				if (abstracts != null && !"".equals(abstracts)) {
+					article.setPabstract(abstracts);
+				}
+				if (authorAdress != null && !"".equals(authorAdress)) {
+					article.setAddr(authorAdress);
+				}
+				article.setPath(articleName);
+				System.out.println("3" + JSON.toJSON(article));
+
+				// SimpleDateFormat sdFormat = new
+				// SimpleDateFormat("yyyy-MM-dd");
+				// Timestamp articleDate = (Timestamp) new Date();
+				// articleDate = articleDate.replaceAll("-", "");
+				// article.setCreateTime(articleDate);
+			}
+		}
+		return article;
+
+		/*
+		 * article.setEsId("0"); //对mysql数据库进行增加 //t_article
+		 * articleService.addArticle(article); int mysqlId = article.getPid();
+		 * //t_articlePath ArticlePath articlePath = new ArticlePath();
+		 * articlePath.setArticlePath(filePath);
+		 * articlePath.setArticleId(mysqlId);
+		 * articleService.addArticlePath(articlePath); //t_article_user_group
+		 * ArticleUserGroup articleUserGroup =new ArticleUserGroup();
+		 * articleUserGroup.setArticleId(mysqlId);
+		 * articleUserGroup.setGroupId(groupId);
+		 * articleUserGroup.setUserId(userId);
+		 * articleService.addArticleUserGroup(articleUserGroup); //存储到ES
+		 * elasticsearchService.addArticleToES(filePath, mysqlId);
+		 * files.remove(0); } }
+		 */
+
+		// System.out.println(groupId);
+		// Article article = articleService.getArticle(1);
+		// System.out.println(article.getDoi());
+
+	}
+
+	@RequestMapping(value = "removeArticle", method = RequestMethod.POST)
+	public @ResponseBody Map<String, Boolean> removeArticle(HttpServletRequest request, HttpSession session,
+			@RequestParam("path") String path) throws Exception {
+		Map<String, Boolean> map = new HashMap<>();
+		System.out.println("remove..." + path);
+		File file = new File("D:\\uploadfile\\" + path);
+		Boolean flag = true;
+		if (!file.exists()) {
+			flag = false;
+		} else {
+			file.delete();
+		}
+		map.put("rel", flag);
+		// model.addAttribute("recieve", "recieve");
+		return map;
+	}
+
+	@RequestMapping(value = "saveArticle", method = RequestMethod.POST)
+	public @ResponseBody Boolean saveArticle(@RequestParam("article") String articleStr, HttpSession session)
+			throws Exception {
+		Article article = JSON.parseObject(articleStr, Article.class);
+		String account = session.getAttribute("account").toString();
+		article.setAccount(account);
+		article.setEsid("0");
+		System.out.println(article.getUnique_title());
+		if (articleService.getByUnique(article.getUnique_title()) == null) {
+			articleService.addArticle(article);
+			return true;
+		} else {
+			return false;
+		}
+	}
+}

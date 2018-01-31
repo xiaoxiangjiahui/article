@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.csu.mapper.GroupUserMapper">
+    <insert id="add" parameterType="GroupUser">
+        insert into t_group_user (groupId,userId,groupFlag) value (#{groupId},#{userId},#{groupFlag})
+    </insert>
+    
+    <delete id="delete" parameterType="GroupUser">
+        delete from t_group_user where groupId=#{groupId} and userId=#{userId} 
+    </delete>
+    
+    <select id="getPersonal" parameterType="GroupUser" resultType="GroupUser">
+        select * from t_group_user where userId=#{userId} and groupFlag=#{groupFlag}
+    </select>
+    
+    <select id="listUser" parameterType="int" resultType="GroupUser">
+        select * from t_group_user where groupId=#{groupId}
+    </select>
+    
+    <select id="listGroup" parameterType="String" resultType="GroupUser">
+        select * from t_group_user where userId=#{userId}
+    </select>
+    
+    <select id="count" resultType="java.lang.Integer" parameterType="int">
+    	select count(*) from t_group_user where groupId = #{groupId}
+    </select>
+</mapper>

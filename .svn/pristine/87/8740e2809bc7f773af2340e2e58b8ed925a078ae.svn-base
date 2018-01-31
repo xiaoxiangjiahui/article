@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.csu.mapper.ArticlePathMapper">
+    <insert id="add" parameterType="ArticlePath">
+        insert into t_article_path (articleId,articlePath) values (#{articleId},#{articlePath})
+    </insert>
+    <delete id="delete" parameterType="int">
+        delete from t_article_path where articleId=#{articleId}
+    </delete>
+    <update id="update" parameterType="ArticlePath">
+        update t_article_path set (articlePath)= (#{articlePath}) where articleId=#{articleId}
+    </update>
+    <select id="get" parameterType="int" resultType="ArticlePath">
+        select * from t_article_path where articleId=#{articleId}
+    </select>
+</mapper>

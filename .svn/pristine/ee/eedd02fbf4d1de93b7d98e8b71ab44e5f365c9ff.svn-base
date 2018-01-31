@@ -1,0 +1,39 @@
+package com.csu.controller;
+
+import java.util.List;
+
+import javax.jms.Session;
+import javax.servlet.http.HttpSession;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import com.csu.entity.CommentArticle;
+import com.csu.service.ArticleService;
+import com.csu.service.CommentService;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
+
+@RequestMapping("personal")
+@Controller
+public class SharedController {
+	 @Autowired
+	 ArticleService articleService;
+	 @Autowired
+	 CommentService commentService;
+	 @RequestMapping(value="shared")
+	 public String shared(HttpSession httpSession,Model model){
+		 if(httpSession.getAttribute("account") == null)
+				return "redirect:../login";
+		 PageHelper.startPage(1,10);
+		 String account = httpSession.getAttribute("account").toString();
+		 List<CommentArticle> comms = commentService.getByToUser(account);
+		 int totalArticles = (int) new PageInfo<>(comms).getTotal();
+		 model.addAttribute("totalArticles", totalArticles);
+		 model.addAttribute("articles", comms);
+		 return "shared";
+		 
+	 }
+}

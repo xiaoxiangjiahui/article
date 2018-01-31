@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+    xmlns:tx="http://www.springframework.org/schema/tx" xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:mvc="http://www.springframework.org/schema/mvc"
+    xsi:schemaLocation="
+     http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
+     http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+     http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.0.xsd
+     http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.0.xsd
+     http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.0.xsd
+     http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd">
+     
+   <context:annotation-config />
+    <context:component-scan base-package="com.csu.service.*" />
+ 
+    <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">  
+      <property name="driverClassName">  
+          <value>com.mysql.jdbc.Driver</value>  
+      </property>  
+      <property name="url">  
+          <value>jdbc:mysql://202.197.61.250:3306/db154611142?characterEncoding=UTF-8</value>  
+      </property>  
+      <property name="username">  
+          <value>154611142</value>  
+      </property>  
+      <property name="password">  
+          <value>db154611142</value>  
+      </property>     
+    </bean>
+     
+    <bean id="sqlSession" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="typeAliasesPackage" value="com.csu.entity" />
+        <property name="dataSource" ref="dataSource"/>
+        <property name="mapperLocations" value="classpath:com/csu/mapper/*.xml"/>
+        <property name="configLocation" value="classPath:mybatis-config.xml" />
+    </bean>
+ 
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" value="com.csu.mapper"/>
+    </bean>
+    
+    <bean id="client" factory-bean="esClientBuilder" factory-method="init" destroy-method="close"></bean>
+    <bean id="esClientBuilder" class="com.csu.elasticsearch.EsClientBuilder">
+        <property name="clusterName" value="elasticsearch"></property>
+        <property name="nodeIpInfo" value="localhost:9300"/>
+    </bean>
+    
+   	
+   	<bean id="javaMailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+   		<property name="host" value="smtp.qq.com"></property>
+  		<property name="port" value="587"></property>
+   		<property name="javaMailProperties">
+      	<props>
+        	<prop key="mail.smtp.auth">true</prop>
+          	<prop key="mail.smtp.timeout">25000</prop>
+        </props>
+   		</property>
+   		<property name="username" value="1069961494@qq.com"></property>
+   		<property name="password" value="lqeoaduiegopbcdg"></property>
+	</bean>
+	
+	<bean id="simpleMailMessage" class="org.springframework.mail.SimpleMailMessage">
+        <property name="from" value="1069961494@qq.com" />
+    </bean>      
+     
+</beans>

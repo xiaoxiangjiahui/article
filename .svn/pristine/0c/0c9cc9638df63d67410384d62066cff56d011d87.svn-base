@@ -1,0 +1,39 @@
+package com.csu.entity;
+
+import java.util.List;
+
+public class Author {
+    private String name;
+    private List<AuthorsAdress> authorsAdresses;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+
+    public List<AuthorsAdress> getAuthorsAdresses() {
+        return authorsAdresses;
+    }
+    public String  getAuthorsAdressesString() {
+        if (authorsAdresses==null)return "";
+        String authorsadr="";
+        for (int i = 0; i < authorsAdresses.size(); i++) {
+            authorsadr+=authorsAdresses.get(i).getDepartment()==null?"":authorsAdresses.get(i).getDepartment()+" ";
+            authorsadr+=authorsAdresses.get(i).getInstitution()==null?"":authorsAdresses.get(i).getInstitution();
+            if (i<authorsAdresses.size()-1){
+                authorsadr+=",";
+            }
+        }
+        return authorsadr;
+    }
+
+    public void setAuthorsAdresses(List<AuthorsAdress> authorsAdresses) {
+        this.authorsAdresses = authorsAdresses;
+    }
+
+
+}

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.csu.mapper.CategoryMapper">
+    <insert id="add" parameterType="Category" useGeneratedKeys="true" keyProperty="cid">
+        insert into t_category (cname,isparent,parentid) values (#{cname},#{isParent},#{parentId})
+    </insert>
+    
+    <delete id="delete" parameterType="int">
+        delete from t_category where cid=#{cid}
+    </delete>
+    
+    <select id="getById" parameterType="int" resultType="Category">
+        select * from t_category where cid=#{cid}
+    </select>
+    
+    <select id="getByUser" parameterType="int" resultType="Category">
+        select * from t_category where account=#{account}
+    </select>
+    
+    <update id="update" parameterType="Category">
+        update t_category set cname=#{cname} where cid=#{cid}
+    </update>
+    
+    <select id="list" resultType="Category">
+    	select * from t_category
+    </select>
+</mapper>

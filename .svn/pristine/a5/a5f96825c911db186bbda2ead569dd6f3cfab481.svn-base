@@ -1,0 +1,44 @@
+package com.csu.crawler;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.tika.metadata.Metadata;
+import org.apache.tika.parser.ParseContext;
+import org.apache.tika.parser.pdf.PDFParser;
+import org.apache.tika.sax.BodyContentHandler;
+
+public class TikaUtil {
+	public static String getPDFOriginalText(String filePath) {
+		String originalText=null;
+		try {
+			System.out.println(">>>>>>>>>>>>start tika");
+			BodyContentHandler handler = new BodyContentHandler();
+			Metadata metadata = new Metadata();
+			FileInputStream inputstream = new FileInputStream(new File(filePath));
+			ParseContext pcontext = new ParseContext();
+			PDFParser pdfparser = new PDFParser();
+			pdfparser.parse(inputstream, handler, metadata, pcontext);
+			originalText = handler.toString();
+			System.out.println(">>>>>>>>>>>>tika is end");
+		}catch (Exception e){
+			e.printStackTrace();
+			System.out.println(">>>>>>>>>>>>Tika failed excute");
+		}
+		return originalText;
+	}
+	
+	
+//	public static void main(String [] args) {
+//		try {
+//			String originaltx=TikaUtil.getPDFOriginalText("E:/398.pdf");
+//			System.out.println(originaltx);
+//			System.out.println(DoiUtil.getDoiContent(originaltx));
+//		} catch (Exception e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//	}
+}

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.csu.mapper.GroupMapper">
+    <insert id="add" parameterType="Group" useGeneratedKeys="true" keyProperty="groupId">
+        insert into t_group (gname,account) values (#{groupName},#{account})
+    </insert>
+    
+    <delete id="delete" parameterType="int">
+        delete from t_group where groupId=#{groupId}
+    </delete>
+    
+    <select id="getById" parameterType="int" resultType="Group">
+        select * from t_group where groupId=#{groupId}
+    </select>
+    
+     <select id="userGroup" parameterType="Integer[]" resultType="Group">
+        select * from t_group
+        <where>  
+        	groupid  
+	        <foreach  collection="array" item="id" open="in (" close=")" separator=",">   
+	            #{groupId}  
+	        </foreach>  
+	    </where>  
+    </select>
+    
+    <select id="getGroupManeger" parameterType="int" resultType="GroupAndCount">
+        select t_user.account,t_user.username,t_group.createtime from t_user,t_group where t_group.groupid=#{groupid} and t_user.account=t_group.account;
+    </select>
+    
+    <select id="count" resultType="java.lang.Integer" parameterType="int">
+    	select count(*) from t_user where groupId = #{groupId}
+    </select>
+    
+    <select id="getByUser" parameterType="String" resultType="Group">
+        select * from t_group where account=#{account}
+    </select>
+    
+    <update id="update" parameterType="Group">
+        update t_group set gname=#{groupName} where groupId=#{groupId}
+    </update>
+    
+    <select id="list" resultType="Group">
+    	select * from t_group
+    </select>
+</mapper>

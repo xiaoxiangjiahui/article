@@ -1,0 +1,363 @@
+package com.csu.controller;
+
+import java.io.BufferedInputStream;
+import java.io.Console;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.commons.lang.RandomStringUtils;
+import org.apache.lucene.analysis.it.ItalianAnalyzer;
+import org.apache.lucene.index.MergePolicyWrapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpRequest;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.alibaba.fastjson.JSON;
+import com.csu.entity.Article;
+import com.csu.entity.ArticlePath;
+import com.csu.entity.ArticleUserGroup;
+import com.csu.entity.Author;
+import com.csu.entity.Category;
+import com.csu.entity.CommentArticle;
+import com.csu.entity.Group;
+import com.csu.entity.HeaderInfo;
+import com.csu.entity.Stars;
+import com.csu.entity.User;
+import com.csu.service.ArticleService;
+import com.csu.service.CategoryService;
+import com.csu.service.CommentService;
+import com.csu.service.ElasticsearchService;
+import com.csu.service.GroupService;
+import com.csu.service.GroupUserService;
+import com.csu.service.MailSenderService;
+import com.csu.service.StarsService;
+import com.csu.service.UserService;
+import com.csu.service.impl.XmlProcessServiceImpl;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
+
+
+//主要私人文献库的页面展示
+@RequestMapping("personal")
+@Controller
+public class PersonalController {
+    @Autowired
+    ArticleService articleService;
+    @Autowired
+    GroupUserService groupUserService;
+    @Autowired
+    GroupService groupService;
+    @Autowired
+    CommentService commentService;
+    @Autowired
+    ElasticsearchService elasticsearchService;
+    @Autowired
+    MailSenderService mailSenderService;
+    @Autowired
+    UserService userService;
+    @Autowired
+    CategoryService categoryService;
+    @Autowired
+    StarsService starService;
+	@RequestMapping(value="index")
+	public String personalLibrary(HttpSession httpSession,Model model, @RequestParam(required=true,defaultValue="1") int page,
+            @RequestParam(required=false,defaultValue="10") int pageSize){
+		//个人的文献展示
+		if(httpSession.getAttribute("account") == null)
+			return "redirect:../login";
+		String account = httpSession.getAttribute("account").toString();
+		//int groupId = groupUserService.getPersonalGroupId(userId);
+		
+		PageHelper.startPage(page,pageSize);
+		List<Article> articles = articleService.getArticleByuser(account);
+		PageInfo<Article> arts = new PageInfo<>(articles);
+		for(Article at:articles){
+			int pid=at.getPid();
+			//System.out.println("isnull:"+starService.getByUser(pid, account)==null);
+			if(starService.getByUser(pid, account)==null){
+				at.setStars(0);
+			}else{
+				int stars = starService.getByUser(pid, account).getStars();
+				at.setStars(stars);
+			}
+		}
+		model.addAttribute("page", arts);
+		model.addAttribute("articles", articles);
+		return "index";
+	}
+
+	//搜索
+	@RequestMapping("titleSearch")	
+	public ModelAndView titleSearch(@RequestParam(value="keyw")String keyw,Model model,HttpSession httpSession,@RequestParam(required=true,defaultValue="1") int page,
+            @RequestParam(required=false,defaultValue="10") int pageSize){
+		String account = httpSession.getAttribute("account").toString();
+		//System.out.println(keyw);
+		PageHelper.startPage(page,pageSize);
+		List<Article> articles = articleService.searchByTitle("%"+keyw+"%");
+		for(Article at:articles){
+			int pid=at.getPid();
+			//System.out.println("isnull:"+starService.getByUser(pid, account)==null);
+			if(starService.getByUser(pid, account)==null){
+				at.setStars(0);
+			}else{
+				int stars = starService.getByUser(pid, account).getStars();
+				at.setStars(stars);
+			}
+		}
+		Map<String, Object> map = new HashMap<>();
+		PageInfo<Article> arts = new PageInfo<>(articles);
+		map.put("page", arts);
+		map.put("articles", articles);
+		return new ModelAndView("generalSearch",map);
+	}
+	
+	//条件搜索
+	@RequestMapping("attachSearch")
+	public ModelAndView attachSearch(@RequestParam(value="keyw")String keyw,@RequestParam(value="cid")int cid,@RequestParam(value="abst")String abst,@RequestParam(value="auth")String auth,HttpSession httpSession,
+			@RequestParam(required=true,defaultValue="1") int page,@RequestParam(required=false,defaultValue="10") int pageSize){
+		String account = httpSession.getAttribute("account").toString();
+		PageHelper.startPage(page,pageSize);
+		List<Article> articles;
+		if(cid==0){
+			articles = articleService.searchByAttachNoCid("%"+keyw+"%", "%"+auth+"%", "%"+abst+"%");
+		}else{
+			articles = articleService.searchByAttach("%"+keyw+"%", "%"+auth+"%", "%"+abst+"%",cid);
+		}
+		
+		for(Article at:articles){
+			int pid=at.getPid();
+			if(starService.getByUser(pid, account)==null){
+				at.setStars(0);
+			}else{
+				int stars = starService.getByUser(pid, account).getStars();
+				at.setStars(stars);
+			}
+		}
+		Map<String, Object> map = new HashMap<>();
+		PageInfo<Article> arts = new PageInfo<>(articles);
+		map.put("page", arts);
+		map.put("articles", articles);
+		return new ModelAndView("generalSearch",map);
+	}
+	
+	@RequestMapping(value="generalSearch")
+	public String gerneralSearch(HttpSession httpSession,Model model){
+		return "generalSearch";
+	}
+	
+	//选中文献的详细信息与评论
+	@RequestMapping("showDetails")
+	@ResponseBody 
+	public Map<String, Object> showDetails(@RequestParam("article_id")int articleId) {
+		Map<String,Object> map = new HashMap<String,Object>();
+		Article article = articleService.getArticle(articleId);
+		map.put("article", article);
+		List<Stars> stars = starService.getStars(articleId);
+		map.put("stars", stars); 
+		return map;
+	}
+	
+	//下载单个文献
+	public ResponseEntity<byte[]> downloadSingleFile(int articleId) throws IOException{
+		ArticlePath articlePath = articleService.getArticlePath(articleId);
+		String fileName = articleService.getArticle(articleId).getPtitle();
+		String filePath = articlePath.getArticlePath();
+		if (filePath != null) {
+			File file = new File(filePath);
+			if (file.exists()) {
+				ResponseEntity<byte[]> fileEntity = articleService.download(fileName,file);
+				return fileEntity;
+			}
+		}
+		return null;
+	}
+	
+	//批量下载文献
+	@RequestMapping("downloadArticles")
+	@ResponseBody 
+    public Map<String, String> downloadArticles(@RequestBody @RequestParam("selectedData[]") int[] articleIds) throws ServletException, IOException {				
+    	String fileEntity = articleService.downloadBatch(articleIds);
+    	Map<String, String> map =new HashMap<>();
+    	map.put("path", fileEntity);
+		return map;
+    }
+			
+	
+	
+	//ES的搜索
+	@RequestMapping(value="searchSubmit",method=RequestMethod.POST)
+	public String searchArticle(String keywords,Model model,HttpSession session){
+		String userId = session.getAttribute("userId").toString();
+		int groupId = groupUserService.getPersonalGroupId(userId);
+		List<Integer> articleIds = elasticsearchService.searchForArticleId(keywords);
+		articleIds = articleService.filterArticleFromgroup(articleIds, groupId);
+		PageHelper.startPage(1,10);
+		List<Article> searchArticles = new ArrayList<Article>();
+		while(!articleIds.isEmpty()){
+			int articleId = articleIds.get(0);
+			articleIds.remove(0);
+			searchArticles.add(articleService.getArticle(articleId));
+		}
+		int totalSearchArticles = (int) new PageInfo<>(searchArticles).getTotal();
+		model.addAttribute("totalArticles", totalSearchArticles);
+		model.addAttribute("articles", searchArticles);
+		return "personalLibrary";
+	}	
+	
+	//批量删除
+	@RequestMapping("personalDeleteSubmit")	
+	public @ResponseBody Map<String, Boolean> deleteSubmit(@RequestBody @RequestParam(value="selectedData[]")String[] articleIdString) throws Exception{		
+		Map<String, Boolean> map = new HashMap<>();
+		try {
+			for(String articleId :articleIdString) {
+				String path = articleService.getArticle(Integer.valueOf(articleId)).getPath();
+				File file = new File("C:\\uploadfile\\"+path);
+		 		if(file.exists()){
+		 			file.delete();
+		 		}
+				articleService.deleteArticle(Integer.valueOf(articleId));
+				System.out.println(!commentService.getByPid(Integer.valueOf(articleId)).isEmpty());
+				if(!commentService.getByPid(Integer.valueOf(articleId)).isEmpty()){
+					commentService.deleteElem(Integer.valueOf(articleId));
+				}
+				commentService.deleteElem(Integer.valueOf(articleId));
+				if(!starService.getList(Integer.valueOf(articleId)).isEmpty()){
+					starService.deleteStars(Integer.valueOf(articleId));
+				}
+				starService.deleteStars(Integer.valueOf(articleId));
+				//elasticsearchService.deleteArticleFromES(Integer.valueOf(articleId));
+				
+			}	
+			map.put("rel", true);
+			return map;
+		} catch (Exception e) {
+			// TODO: handle exception
+			map.put("rel", false);
+			return map;
+		}
+				
+	}
+	
+	//编辑修改详细信息
+	@RequestMapping("editDetails")
+	public @ResponseBody Article editDetails(@RequestBody @RequestParam("article") String articleStr) {
+		Article article = JSON.parseObject(articleStr, Article.class);
+		System.out.println(article.getCid());
+		articleService.updateArticle(article);
+		return article;
+	}
+	
+	//推荐文章
+	@RequestMapping("recommendArticle")
+	public @ResponseBody Map<String, Boolean> recommendArticle(@RequestParam("users[]")String[] users,HttpSession session,@RequestParam("articleIds[]")int[] articleIds,@RequestParam("groupids[]")int[] groupids) {		
+		//parse userId
+		Map<String, Boolean> map = new HashMap<>();
+		boolean rel = true;
+		String fromUser = session.getAttribute("account").toString();
+		String contentText;
+		if(groupids[0]!=0){
+			for(int pid:articleIds){
+				for(int groupid:groupids){
+					System.out.println(articleService.getArticleGroup(groupid, pid)!=null);
+					if (articleService.getArticleGroup(groupid, pid)!=null) {
+						rel=false;
+						map.put("rel", rel);
+						return map;
+					}else{
+						articleService.addToGroup(groupid, pid, fromUser);
+					}
+				}
+			}
+		}
+		if(!users[0].equals("0")){
+			for(int pid:articleIds){
+				for(String toUser:users){
+					String uemail = userService.getUSer(toUser).getEmail();
+					CommentArticle cat = new CommentArticle();
+					cat.setPid(pid);
+					cat.setFromUser(fromUser);
+					cat.setToUser(toUser);
+					contentText = "Hello!" + userService.getUserName(fromUser) + " recommend a article to you:" + articleService.getArticle(pid).getPtitle();
+					mailSenderService.sendEmail(uemail, contentText);
+					commentService.saveComment(cat);
+				}
+			}
+		}
+		map.put("rel", rel);
+		return map;
+	}
+	
+	@RequestMapping("getCategory")
+	public @ResponseBody List<Category> getCategory(HttpSession session) {
+		
+		return categoryService.getCategory();
+	}
+	
+	//评分
+	@RequestMapping("createStars")
+	public @ResponseBody Stars createStars(@RequestParam("pid")int pid,@RequestParam("score")int score, HttpSession session) {
+		//if(starService.)
+		String account =session.getAttribute("account").toString();
+		Stars stars = new Stars();
+		stars.setAccount(account);
+		stars.setPid(pid);
+		stars.setStars(score);
+		if(starService.getByUser(pid, account)!=null){
+			int sid = starService.getByUser(pid, account).getSid();
+			stars.setSid(sid);
+			starService.updateStars(stars);
+		}else{
+			starService.addStars(stars);
+		}
+		return starService.getByUser(pid, account);
+	}
+	
+	//获取组和用户
+	@RequestMapping("getUserAndGroup")
+	public @ResponseBody Map<String, Object> getUserAndGroup(HttpSession session){
+		Map<String, Object> map = new HashMap<String, Object>();
+		String account = session.getAttribute("account").toString();
+		List<Group> groups = new ArrayList<Group>();
+		if(userService.getGroupIds(account)==null){
+			map.put("groups",null);
+		}else{
+			Integer[] groupids = userService.getGroupIds(account);
+			for(int id:groupids){
+				Group group = new Group();
+				group = groupService.getGroup(id);
+				groups.add(group);
+			}
+			map.put("groups", groups);
+		}
+		List<User> users = userService.listAllUsers();
+		map.put("users", users);
+		return map;
+	}
+}

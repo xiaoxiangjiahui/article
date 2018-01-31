@@ -1,0 +1,17 @@
+package com.csu.mapper;
+
+import java.util.List;
+
+import com.csu.entity.Article;
+
+public interface ArticleMapper {
+	public void add(Article article);
+	public void delete(int articleId);//t_article_user_group
+	public Article get(int articleId);
+	public Article getByDoi(String doi);
+	public Article getByGroup(int gid);
+	public void update(Article article);
+	public List<Article> list(List<Integer> articleIds);
+	public List<Article> getArticleByuser(String account);
+
+}

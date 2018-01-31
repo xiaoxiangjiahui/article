@@ -1,0 +1,27 @@
+package com.csu.entity;
+
+public class GroupAndCount {
+	private int groupId;
+	private String groupName;
+	private int count;
+	
+	public void setGroupId(int groupId) {
+		this.groupId = groupId;
+	}
+	public void setGroupName(String groupName) {
+		this.groupName = groupName;
+	}
+	public void setCount(int count) {
+		this.count = count;
+	}
+	
+	public int getGroupId() {
+		return groupId;
+	}
+	public String getGroupName() {
+		return groupName;
+	}
+	public int getCount() {
+		return count;
+	}
+}

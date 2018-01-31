@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.csu.mapper.CommentUserContentMapper">
+    <insert id="add" parameterType="CommentUserContent" useGeneratedKeys="true" keyProperty="commentId">
+        insert into t_comment_user_content (content,userId,commentDate) values (#{content},#{userId},#{commentDate})
+    </insert>
+    
+    <delete id="delete" parameterType="int">
+        delete from t_comment_user_content where commentId=#{commentId}
+    </delete>
+    
+    <select id="get" parameterType="int" resultType="CommentUserContent">
+        select * from t_comment_user_content where commentId=#{commentId}
+    </select>
+    
+    <select id="list" resultType="CommentUserContent">
+    	select * from t_comment_user_content where commentId in
+    	<foreach collection="list" item="commentId" index="index" open="(" close=")" separator=",">#{commentId}</foreach>
+    	order by commmentDate DESC
+    </select>
+</mapper>

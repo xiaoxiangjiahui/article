@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.csu.mapper.ArticleMapper">
+    <insert id="add" parameterType="Article" useGeneratedKeys="true" keyProperty="pid">
+        insert into t_article (cid,doi,unique_title,ptitle,authors,addr,publish,publishdate,pabstract,path,esid,account values (#{cid},#{doi},#{unique_title},#{ptitle},#{authors},#{addr},#{publish},#{publishdate},#{pabstract},#{path},#{esid},#{account})
+    </insert>
+    
+    <delete id="delete" parameterType="int">
+        delete from t_article where pid=#{pid}
+    </delete>
+    
+    <update id="update" parameterType="Article">
+        update t_article set ptitle=#{ptitle}, authors=#{authors}, addr=#{addr}, pabstract=#{pabstract},cid=#{cid},doi=#{doi},publish=#{publish},publishdate=#{publishdate}
+         where pid=#{pid}
+    </update>
+    
+    <select id="get" parameterType="int" resultType="Article">
+        select * from t_article where pid=#{pid}
+    </select>
+    
+    <select id="getByDoi" parameterType="String" resultType="Article">
+        select * from t_article where doi=#{doi}
+    </select>
+    
+    <select id="getByGroup" parameterType="int" resultType="Article">
+        select * from t_article where groupid=#{groupid}
+    </select>
+    
+    <select id="list" resultType="Article">
+        select * from t_article where t_article.articleId in 
+        <foreach collection="list" item="articleId" index="index" open="(" close=")" separator=",">#{articleId}</foreach> 
+        order by createtime desc
+    </select>
+    
+    <select id="getArticleByuser" resultType="Article">
+        select * from t_article where account=#{account}
+    </select>
+</mapper>

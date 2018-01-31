@@ -1,0 +1,17 @@
+package com.csu.service;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import com.csu.entity.User;
+
+public interface UserService {
+	public List<User> listAllUsers();//just for test
+	public boolean checkUser(String account,String userPasswd);
+    public boolean newUser(String account,String userName,String userPasswd,String email,int role,int groupId);
+	public void updateUser(String account,String userName,String userPasswd,String email,int role,int groupId);
+	public List<String> searchUserName(String userName);
+	public String getUserName(String account);
+	public User getUSer(String account);
+	public Integer[] getGroupIds(String account); 
+}

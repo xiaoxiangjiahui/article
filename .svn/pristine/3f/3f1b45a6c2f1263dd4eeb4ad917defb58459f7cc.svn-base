@@ -1,0 +1,113 @@
+package com.csu.entity;
+
+import java.sql.Timestamp;
+
+public class Article {
+	private int pid;
+	private int cid;
+	private String doi;
+	private String unique_title;
+	private String ptitle;
+	private String authors;
+	private String addr;
+	private String esId;
+	private String publish;
+	private String publishdate;
+	private String pabstract;
+	private String path;
+	private int groupid;
+	private String account;
+	private Timestamp createtime;
+	public int getPid() {
+		return pid;
+	}
+	public void setPid(int pid) {
+		this.pid = pid;
+	}
+	public int getCid() {
+		return cid;
+	}
+	public void setCid(int cid) {
+		this.cid = cid;
+	}
+	public String getDoi() {
+		return doi;
+	}
+	public void setDoi(String doi) {
+		this.doi = doi;
+	}
+	public String getUniqueTitle() {
+		return unique_title;
+	}
+	public void setUniqueTitle(String unique_title) {
+		this.unique_title = unique_title;
+	}
+	public String getPtitle() {
+		return ptitle;
+	}
+	public void setPtitle(String ptitle) {
+		this.ptitle = ptitle;
+	}
+	public String getAuthors() {
+		return authors;
+	}
+	public void setAuthors(String authors) {
+		this.authors = authors;
+	}
+	public String getAddr() {
+		return addr;
+	}
+	public void setAddr(String addr) {
+		this.addr = addr;
+	}
+	public String getEsId() {
+		return esId;
+	}
+	public void setEsId(String esId) {
+		this.esId = esId;
+	}
+	public String getPublish() {
+		return publish;
+	}
+	public void setPublish(String publish) {
+		this.publish = publish;
+	}
+	public String getPublishDate() {
+		return publishdate;
+	}
+	public void setPublishDate(String publishdate) {
+		this.publishdate = publishdate;
+	}
+	public String getPabstracts() {
+		return pabstract;
+	}
+	public void setPabstracts(String pabstract) {
+		this.pabstract = pabstract;
+	}
+	public String getPath() {
+		return path;
+	}
+	public void setPath(String path) {
+		this.path = path;
+	}
+	public String getAccount() {
+		return account;
+	}
+	public void setAccount(String account) {
+		this.account = account;
+	}
+	public Timestamp getCreateTime() {
+		return createtime;
+	}
+	public void setCreateTime(Timestamp createtime) {
+		this.createtime = createtime;
+	}
+	public int getGroupid() {
+		return groupid;
+	}
+	public void setGroupid(int groupid) {
+		this.groupid = groupid;
+	}
+	
+	
+}

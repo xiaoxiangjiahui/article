@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 对用户的操作 -->
+<mapper namespace="com.csu.mapper.UserMapper">
+    <insert id="add" parameterType="User">
+        insert into t_user (account,username,passwd,email,role,groupid) values (#{account},#{userName},#{userPasswd},#{userEmail},#{role},#{groupId})
+    </insert>
+    
+    <delete id="delete" parameterType="String">
+        delete from t_user where account = #{account}
+    </delete>
+    
+    <select id="get" parameterType="String" resultType="User">
+        select * from t_user where account = #{account}
+    </select>
+    
+    <update id="update" parameterType="User">
+        update t_user set passwd = #{userPasswd},t_user.username = #{userName},t_user.email = #{userEmail},t_user.role = #{role},t_user.groupid = #{groupId} where t_user.account = #{account}
+    </update>
+    
+    <insert id="addUserToGroup">
+        insert into t_user_group (groupid,account) values (#{0},#{1})
+    </insert>
+    
+    <delete id="deleteUserFromGroup">
+        delete from t_user_group where groupid = #{0} and account = #{1}
+    </delete>
+    
+    <select id="list" resultType="User">
+        select account,username,role,email from t_user 
+    </select>
+    
+    <select id="getByName" parameterType="String" resultType="User">
+    	select * from t_user where username = #{userName}
+    </select>
+    
+    <select id="getByGroupId" parameterType="int" resultType="User">
+    	<!-- select account,username,groupid from t_user where groupid = #{groupid} -->
+    	select u.account,u.username,g.groupid from t_user u,t_user_group g where groupid = #{groupid} and u.account=g.account
+    </select>
+    
+    <select id="getGroupIds" parameterType="String" resultType="int">
+    	<!-- select g.groupid from t_user u,t_user_group g where u.account = #{account} and u.account=g.account -->
+    	select DISTINCT g.groupid from t_user u,t_user_group g,t_group tg where u.account = #{0} or tg.account= #{0} and u.account=g.account and u.account=tg.account and g.account=tg.account;
+    </select>
+</mapper>

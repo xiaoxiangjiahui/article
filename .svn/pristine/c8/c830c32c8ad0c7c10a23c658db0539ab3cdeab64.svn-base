@@ -1,0 +1,6 @@
+package com.csu.service;
+
+public interface GrobidService {
+	public String grobidProcess(String FilePath) throws Exception ;
+
+}

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.csu.mapper.GroupMapper">
+    <insert id="add" parameterType="Group" useGeneratedKeys="true" keyProperty="groupId">
+        insert into t_group (gname,account) values (#{groupName},#{account})
+    </insert>
+    
+    <delete id="delete" parameterType="int">
+        delete from t_group where groupId=#{groupId}
+    </delete>
+    
+    <select id="getById" parameterType="int" resultType="Group">
+        select * from t_group where groupId=#{groupId}
+    </select>
+    
+     <select id="getByIds" parameterType="ArrayList" resultType="Group">
+        select * from t_group where groupId in GroupIds;
+    </select>
+    
+    <select id="getByUser" parameterType="String" resultType="Group">
+        select * from t_group where account=#{account}
+    </select>
+    
+    <update id="update" parameterType="Group">
+        update t_group set gname=#{groupName} where groupId=#{groupId}
+    </update>
+    
+    <select id="list" resultType="Group">
+    	select * from t_group
+    </select>
+</mapper>

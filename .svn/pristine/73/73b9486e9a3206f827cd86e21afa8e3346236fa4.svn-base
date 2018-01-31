@@ -1,0 +1,3 @@
+#-------------------- context variables --------------------
+grobid_test_ant.pGrobidHome=D:/dev/grobid-0.5.0/grobid-home
+grobid_test_ant.pGrobidProperties=D:/dev/grobid-0.5.0/grobid-home/config/grobid.properties
